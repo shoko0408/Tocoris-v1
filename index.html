@@ -2,152 +2,124 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>落ちものパズル</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>しょこのゲームランド</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      color: #fff;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      color: #a0aec0;
+      font-size: 0.9rem;
+      margin-bottom: 40px;
+    }
+
+    .game-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .game-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .game-card:active {
+      transform: scale(0.97);
+      background: rgba(255,255,255,0.15);
+    }
+
+    .game-icon {
+      font-size: 2.5rem;
+      width: 56px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .game-info {
+      flex: 1;
+    }
+
+    .game-title {
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .game-desc {
+      color: #a0aec0;
+      font-size: 0.8rem;
+    }
+
+    .arrow {
+      color: #a0aec0;
+      font-size: 1.2rem;
+    }
+
+    .footer {
+      margin-top: 40px;
+      color: #4a5568;
+      font-size: 0.75rem;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ===== START SCREEN ===== -->
-  <div id="start-screen" class="screen active">
-    <h1 class="logo">PUZZLE</h1>
-    <div class="ranking-box" id="start-ranking"></div>
-    <div class="start-actions">
-      <button class="btn ghost" id="rule-btn">RULE</button>
-      <button class="btn primary" id="start-btn">START</button>
-    </div>
+  <h1>🎮 ゲームランド</h1>
+  <p class="subtitle">遊びたいゲームを選んでね</p>
+
+  <div class="game-grid">
+
+    <a class="game-card" href="Tocoris_v1.0.html">
+      <div class="game-icon">🐿️</div>
+      <div class="game-info">
+        <div class="game-title">とこりす v1.0</div>
+        <div class="game-desc">とこりすのゲーム</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+
+    <a class="game-card" href="TocoPuzzle_v1.0.html">
+      <div class="game-icon">🧩</div>
+      <div class="game-info">
+        <div class="game-title">ジグソーパズル v1.0</div>
+        <div class="game-desc">パズルゲーム</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+
   </div>
 
-  <!-- ===== GAME SCREEN ===== -->
-  <div id="game-screen" class="screen">
-    <!-- Mobile top info bar -->
-    <div id="mobile-top">
-      <div class="mi"><span class="mi-l">SCORE</span><span class="mi-v" id="m-score">0</span></div>
-      <div class="mi"><span class="mi-l">Lv</span><span class="mi-v" id="m-level">1</span></div>
-      <div class="mi"><span class="mi-l">LINE</span><span class="mi-v" id="m-lines">0</span></div>
-      <div class="mi">
-        <span class="mi-l">NEXT</span>
-        <canvas id="m-next" width="44" height="44"></canvas>
-      </div>
-    </div>
+  <p class="footer">© shoko0408</p>
 
-    <!-- Canvas + desktop side panel -->
-    <div id="game-row">
-      <div id="canvas-wrap">
-        <canvas id="board"></canvas>
-      </div>
-      <div id="side">
-        <div class="panel">
-          <div class="pl">NEXT</div>
-          <canvas id="next-canvas" width="108" height="108"></canvas>
-        </div>
-        <div class="panel">
-          <div class="pl">SCORE</div>
-          <div class="pv" id="score-val">0</div>
-        </div>
-        <div class="panel">
-          <div class="pl">LEVEL</div>
-          <div class="pv" id="level-val">1</div>
-        </div>
-        <div class="panel">
-          <div class="pl">LINES</div>
-          <div class="pv" id="lines-val">0</div>
-        </div>
-        <button class="btn sm ghost" id="pause-btn">PAUSE</button>
-      </div>
-    </div>
-
-    <!-- Mobile D-pad -->
-    <div id="dpad">
-      <div class="dpad-top">
-        <button class="dbtn wide" id="b-rotate">↑ 回転</button>
-        <button class="dbtn wide" id="b-drop">DROP</button>
-        <button class="dbtn sm" id="m-pause-btn">⏸</button>
-      </div>
-      <div class="dpad-mid">
-        <button class="dbtn" id="b-left">←</button>
-        <button class="dbtn" id="b-down">↓</button>
-        <button class="dbtn" id="b-right">→</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== GAMEOVER SCREEN ===== -->
-  <div id="gameover-screen" class="screen">
-    <h2 class="go-title">GAME OVER</h2>
-    <div class="score-result">
-      <div class="sr-row"><span>SCORE</span><b id="go-score">0</b></div>
-      <div class="sr-row"><span>LINES</span><b id="go-lines">0</b></div>
-      <div class="sr-row"><span>LEVEL</span><b id="go-level">1</b></div>
-    </div>
-    <div id="name-box">
-      <p class="rank-msg">🏆 TOP 5 入賞！</p>
-      <p class="rank-sub">名前を入力してください</p>
-      <div class="name-row">
-        <input id="name-input" type="text" maxlength="10" placeholder="NAME" autocomplete="off">
-        <button class="btn primary" id="reg-btn">登録</button>
-      </div>
-      <button class="skip-link" id="skip-btn">スキップ</button>
-    </div>
-    <div class="ranking-box" id="go-ranking"></div>
-    <button class="btn ghost" id="restart-btn">RESTART</button>
-  </div>
-
-  <!-- ===== RULE MODAL ===== -->
-  <div id="rule-modal">
-    <div class="mbox">
-      <button class="mclose" id="rule-close">✕</button>
-      <h2 class="mtitle">RULE</h2>
-
-      <div class="rsec">
-        <div class="rh">基本ルール</div>
-        <ul class="rul">
-          <li>上から落ちてくるブロック（ミノ）を積み上げる</li>
-          <li>横1列が全て埋まると消えてスコア加算</li>
-          <li>ブロックが画面上端に達するとゲームオーバー</li>
-        </ul>
-      </div>
-
-      <div class="rsec">
-        <div class="rh">スコア（レベル倍率あり）</div>
-        <table class="rtbl">
-          <tr><th>消去ライン数</th><th>スコア</th></tr>
-          <tr><td>1ライン</td><td class="hl">100 × Lv</td></tr>
-          <tr><td>2ライン</td><td class="hl">300 × Lv</td></tr>
-          <tr><td>3ライン</td><td class="hl">500 × Lv</td></tr>
-          <tr><td>4ライン（テトリス）</td><td class="hl">800 × Lv</td></tr>
-        </table>
-      </div>
-
-      <div class="rsec">
-        <div class="rh">レベルアップ</div>
-        <p class="rtxt">累計10ライン消去ごとに1レベルアップ。レベルが上がるほど落下速度が増す。</p>
-        <table class="rtbl">
-          <tr><th>Lv</th><th>累計ライン</th><th>落下間隔</th></tr>
-          <tr><td>1</td><td>0〜9</td><td>800ms</td></tr>
-          <tr><td>3</td><td>20〜29</td><td>660ms</td></tr>
-          <tr><td>5</td><td>40〜49</td><td>520ms</td></tr>
-          <tr><td>8</td><td>70〜79</td><td>310ms</td></tr>
-          <tr><td>11+</td><td>100〜</td><td class="hl">100ms（最速）</td></tr>
-        </table>
-        <p class="rtxt" style="margin-top:4px; font-size:0.7rem; color:#556">※ Lv12以降は速度変化なし</p>
-      </div>
-
-      <div class="rsec">
-        <div class="rh">操作方法</div>
-        <table class="rtbl">
-          <tr><th>キー / ボタン</th><th>動作</th></tr>
-          <tr><td>← →</td><td>左右移動</td></tr>
-          <tr><td>↑ / 回転ボタン</td><td>回転（壁キック対応）</td></tr>
-          <tr><td>↓ / ↓ボタン</td><td>高速落下</td></tr>
-          <tr><td>Space / DROP</td><td>即落下（ハードドロップ）</td></tr>
-          <tr><td>P</td><td>一時停止 / 再開</td></tr>
-        </table>
-        <p class="rtxt" style="margin-top:6px">スマホ：キャンバスをタップで回転、スワイプで移動・即落下</p>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
 </body>
 </html>
