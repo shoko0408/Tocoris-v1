@@ -112,6 +112,19 @@ body{display:flex;align-items:center;justify-content:center;}
 .rec-empty{text-align:center;color:var(--dim);font-size:.75rem;padding:8px 0;}
 .complete-actions{width:100%;max-width:360px;display:flex;gap:10px;}
 
+/* ── ROTATION TOGGLE ── */
+.rot-wrap{width:100%;max-width:360px;background:var(--panel);
+  border:2px solid var(--border);border-radius:12px;
+  padding:14px 18px;display:flex;align-items:center;justify-content:space-between;}
+.rot-label{font-size:.95rem;font-weight:700;color:var(--text);}
+.rot-btns{display:flex;gap:6px;}
+.rot-btn{padding:7px 18px;border:1px solid var(--border);border-radius:20px;
+  background:transparent;color:var(--dim);font-family:inherit;font-size:.82rem;
+  cursor:pointer;transition:all .15s;}
+.rot-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.rot-hint{font-size:.7rem;color:var(--dim);text-align:center;
+  width:100%;max-width:360px;padding:2px 4px;}
+
 /* ── NAME MODAL ── */
 #name-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
   z-index:200;align-items:center;justify-content:center;padding:20px;}
@@ -158,19 +171,28 @@ body{display:flex;align-items:center;justify-content:center;}
   <div id="diff-preview"><img id="diff-img" src="" alt=""></div>
   <div class="diff-cards">
     <div class="diff-card" data-diff="easy">
-      <div><div class="dc-label">かんたん</div><div class="dc-info">4 × 4</div></div>
-      <div class="dc-pieces">16</div>
+      <div><div class="dc-label">かんたん</div><div class="dc-info">8 × 8</div></div>
+      <div class="dc-pieces">64</div>
     </div>
     <div class="diff-card" data-diff="normal">
-      <div><div class="dc-label">ふつう</div><div class="dc-info">5 × 5</div></div>
-      <div class="dc-pieces">25</div>
+      <div><div class="dc-label">ふつう</div><div class="dc-info">10 × 10</div></div>
+      <div class="dc-pieces">100</div>
     </div>
     <div class="diff-card" data-diff="hard">
-      <div><div class="dc-label">むずかしい</div><div class="dc-info">6 × 6</div></div>
-      <div class="dc-pieces">36</div>
+      <div><div class="dc-label">むずかしい</div><div class="dc-info">12 × 12</div></div>
+      <div class="dc-pieces">144</div>
     </div>
   </div>
-  <div style="width:100%;max-width:360px;display:flex;gap:10px;margin-top:4px;">
+  <!-- 回転トグル -->
+  <div class="rot-wrap">
+    <span class="rot-label">🔄 ピースの回転</span>
+    <div class="rot-btns">
+      <button class="rot-btn active" id="rot-off">しない</button>
+      <button class="rot-btn" id="rot-on">する</button>
+    </div>
+  </div>
+  <div class="rot-hint" id="rot-hint" style="display:none">タップでピースを回転できます</div>
+  <div style="width:100%;max-width:360px;display:flex;gap:10px;">
     <button class="btn btn-ghost btn-sm" id="btn-diff-back">← 戻る</button>
   </div>
 </div>
@@ -220,9 +242,9 @@ body{display:flex;align-items:center;justify-content:center;}
 
 // ══ CONSTANTS ══
 const DIFF = {
-  easy:   { cols:4, rows:4, label:'かんたん' },
-  normal: { cols:5, rows:5, label:'ふつう'   },
-  hard:   { cols:6, rows:6, label:'むずかしい' },
+  easy:   { cols:8,  rows:8,  label:'かんたん' },
+  normal: { cols:10, rows:10, label:'ふつう'   },
+  hard:   { cols:12, rows:12, label:'むずかしい' },
 };
 const SK_PUZZLES  = 'tp_puz';
 const SK_REC      = 'tp_rec_'; // + puzzleId + '_' + diff
@@ -234,8 +256,9 @@ const BAR_H       = 48;
 // ══ STATE ══
 let currentPuzzleId = null;
 let currentDiff     = null;
-let selectedListId  = null; // in puzzle-list screen
-let puzzleImg       = null; // Image object
+let rotationMode    = false; // ピース回転あり/なし
+let selectedListId  = null;
+let puzzleImg       = null;
 let pieces          = [];
 let hEdges = [], vEdges = [];
 let cols = 3, rows = 3, pw = 0, ph = 0;
@@ -243,6 +266,8 @@ let boardX = 0, boardY = 0, boardW = 0, boardH = 0;
 let dragging = null, dragOX = 0, dragOY = 0, maxZ = 0;
 let startTime = 0, timerIv = null, elapsedMs = 0;
 let hintVisible = false;
+// タッチ判定用
+let touchSX = 0, touchSY = 0, touchST = 0, touchMoved = false;
 
 // ══ DOM ══
 const $ = id => document.getElementById(id);
@@ -264,22 +289,27 @@ function savePuzzles(arr) {
     alert('保存容量が不足しています。古いパズルを削除してください。');
   }
 }
-function loadRecs(pid, diff) {
-  try { return JSON.parse(localStorage.getItem(SK_REC + pid + '_' + diff)) || []; } catch { return []; }
+// ランキングキー（回転モードで別管理）
+function recKey() {
+  return SK_REC + currentPuzzleId + '_' + currentDiff + (rotationMode ? 'r' : '');
 }
-function saveRecs(pid, diff, arr) {
-  localStorage.setItem(SK_REC + pid + '_' + diff, JSON.stringify(arr));
+function loadRecs(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
 }
-function isNewRecord(pid, diff, ms) {
-  const r = loadRecs(pid, diff);
+function saveRecs(key, arr) {
+  localStorage.setItem(key, JSON.stringify(arr));
+}
+function isNewRecord(ms) {
+  const r = loadRecs(recKey());
   return r.length < MAX_REC || ms < r[r.length - 1].time;
 }
-function addRecord(pid, diff, name, ms) {
-  const r = loadRecs(pid, diff);
+function addRecord(name, ms) {
+  const key = recKey();
+  const r = loadRecs(key);
   r.push({ name: (name||'ゲスト').trim()||'ゲスト', time: ms });
   r.sort((a,b) => a.time - b.time);
   r.length = Math.min(r.length, MAX_REC);
-  saveRecs(pid, diff, r);
+  saveRecs(key, r);
   return r;
 }
 
@@ -342,10 +372,9 @@ function deletePuzzle(id) {
   if (!confirm('このパズルを削除しますか？')) return;
   let pzls = loadPuzzles().filter(p => p.id !== id);
   savePuzzles(pzls);
-  // Remove records
-  Object.values(DIFF).forEach((_,k) => {
-    const key = Object.keys(DIFF)[k];
-    localStorage.removeItem(SK_REC + id + '_' + key);
+  ['easy','normal','hard'].forEach(d => {
+    localStorage.removeItem(SK_REC + id + '_' + d);
+    localStorage.removeItem(SK_REC + id + '_' + d + 'r');
   });
   showPuzzleList();
 }
@@ -371,40 +400,38 @@ async function startGame(puzzleId, diff) {
   show('game');
   $('pieces-disp').textContent = '';
 
-  // Load image
   puzzleImg = await loadImage(pdata.image);
 
-  // Setup canvas
   cvs.width  = window.innerWidth;
   cvs.height = window.innerHeight - BAR_H;
   cvs.style.marginTop = BAR_H + 'px';
 
-  // Board layout: image fits in top ~58% of canvas
   const d = DIFF[diff];
   cols = d.cols; rows = d.rows;
-  const maxBW = cvs.width  * 0.92;
-  const maxBH = cvs.height * 0.58;
+
+  // ピース数が多いほどボードを広めに取る
+  const boardRatio = cols >= 10 ? 0.68 : 0.58;
+  const maxBW = cvs.width  * 0.96;
+  const maxBH = cvs.height * boardRatio;
   const sc = Math.min(maxBW / puzzleImg.width, maxBH / puzzleImg.height);
   boardW = Math.round(puzzleImg.width  * sc);
   boardH = Math.round(puzzleImg.height * sc);
   boardX = Math.round((cvs.width - boardW) / 2);
-  boardY = 6;
+  boardY = 4;
   pw = boardW / cols;
   ph = boardH / rows;
 
-  // Generate edge tabs
   hEdges = Array.from({length: rows-1}, () =>
     Array.from({length: cols}, () => Math.random() < .5 ? 1 : -1));
   vEdges = Array.from({length: rows}, () =>
     Array.from({length: cols-1}, () => Math.random() < .5 ? 1 : -1));
 
-  // Create pieces
   pieces = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       pieces.push({
         col: c, row: r,
-        x: 0, y: 0,
+        x: 0, y: 0, rot: 0,
         placed: false, z: 0,
         tabs: {
           top:    r > 0      ? -hEdges[r-1][c] : 0,
@@ -428,7 +455,6 @@ function scatterPieces() {
   const areaY = boardY + boardH + pad;
   const areaH = cvs.height - areaY - pad;
   const allW  = cvs.width - pw - pad * 2;
-  // Shuffle
   for (let i = pieces.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i+1));
     [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
@@ -436,11 +462,12 @@ function scatterPieces() {
   pieces.forEach((p, i) => {
     p.placed = false;
     p.z = i;
+    // 回転モード: ランダムな向き（0/90/180/270）
+    p.rot = rotationMode ? [0,90,180,270][Math.floor(Math.random()*4)] : 0;
     if (areaH > ph + 10) {
       p.x = pad + Math.random() * allW;
       p.y = areaY + Math.random() * Math.max(0, areaH - ph);
     } else {
-      // fallback: scatter across full canvas
       p.x = pad + Math.random() * allW;
       p.y = pad + Math.random() * (cvs.height - ph - pad * 2);
     }
@@ -472,39 +499,52 @@ function drawEdge(x1, y1, x2, y2, tab) {
   ctx.lineTo(x2, y2);
 }
 
-function piecePath(p) {
-  const {x, y, tabs} = p;
+// ローカル座標（0,0)-(pw,ph) でピース形状を描画
+function piecePathLocal(tabs) {
   ctx.beginPath();
-  ctx.moveTo(x, y);
-  drawEdge(x,    y,    x+pw, y,    tabs.top);
-  drawEdge(x+pw, y,    x+pw, y+ph, tabs.right);
-  drawEdge(x+pw, y+ph, x,    y+ph, tabs.bottom);
-  drawEdge(x,    y+ph, x,    y,    tabs.left);
+  ctx.moveTo(0, 0);
+  drawEdge(0,  0,  pw, 0,  tabs.top);
+  drawEdge(pw, 0,  pw, ph, tabs.right);
+  drawEdge(pw, ph, 0,  ph, tabs.bottom);
+  drawEdge(0,  ph, 0,  0,  tabs.left);
   ctx.closePath();
 }
 
+// ピース中心を基準に回転変換を適用してから描画
 function drawPiece(p) {
+  const cx = p.x + pw/2, cy = p.y + ph/2;
+
+  // ── 画像クリップ ──
   ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(p.rot * Math.PI / 180);
+  ctx.translate(-pw/2, -ph/2);
   if (p === dragging) {
-    ctx.shadowColor = 'rgba(0,0,0,.5)';
-    ctx.shadowBlur  = 14;
-    ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
+    ctx.shadowColor = 'rgba(80,30,140,.35)';
+    ctx.shadowBlur  = 16;
+    ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3;
   }
-  piecePath(p);
+  piecePathLocal(p.tabs);
   ctx.clip();
-  ctx.drawImage(puzzleImg,
-    p.x - p.col * pw,
-    p.y - p.row * ph,
-    boardW, boardH
-  );
+  ctx.drawImage(puzzleImg, -p.col * pw, -p.row * ph, boardW, boardH);
   ctx.restore();
 
-  // border
+  // ── 枠線 ──
   ctx.save();
-  piecePath(p);
-  ctx.strokeStyle = p === dragging ? '#7030c0' : 'rgba(80,30,140,.45)';
+  ctx.translate(cx, cy);
+  ctx.rotate(p.rot * Math.PI / 180);
+  ctx.translate(-pw/2, -ph/2);
+  piecePathLocal(p.tabs);
+  ctx.strokeStyle = p === dragging ? '#7030c0' : 'rgba(80,30,140,.5)';
   ctx.lineWidth   = p === dragging ? 2.5 : 1.2;
   ctx.stroke();
+  // 回転中ピースに回転インジケーター
+  if (rotationMode && p === dragging && p.rot !== 0) {
+    ctx.fillStyle = 'rgba(112,48,192,.75)';
+    ctx.font = `bold ${Math.min(pw,ph)*.35}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('↻', pw/2, ph/2);
+  }
   ctx.restore();
 }
 
@@ -553,9 +593,11 @@ function render() {
 function trySnap(p) {
   const tx = boardX + p.col * pw;
   const ty = boardY + p.row * ph;
-  const snapD = Math.max(pw * 0.38, 28);
-  if (Math.hypot(p.x - tx, p.y - ty) < snapD) {
-    p.x = tx; p.y = ty; p.placed = true;
+  const snapD = Math.max(pw * 0.40, 20);
+  const posOk = Math.hypot(p.x - tx, p.y - ty) < snapD;
+  const rotOk = !rotationMode || p.rot === 0;
+  if (posOk && rotOk) {
+    p.x = tx; p.y = ty; p.rot = 0; p.placed = true;
   }
 }
 
@@ -566,69 +608,89 @@ function checkComplete() {
   }
 }
 
-// ══ TOUCH ══
+// ══ TOUCH / MOUSE ══
 function canvasXY(touch) {
   const rect = cvs.getBoundingClientRect();
   return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
 }
+
+// 回転変換を逆適用してローカル座標に変換してヒット判定
 function findPiece(x, y) {
   const pad = Math.ceil(Math.max(pw, ph) * 0.32);
-  // reverse z-order (top piece first)
   const sorted = [...pieces].sort((a,b) => b.z - a.z);
   for (const p of sorted) {
     if (p.placed) continue;
-    if (x >= p.x - pad && x <= p.x + pw + pad &&
-        y >= p.y - pad && y <= p.y + ph + pad) return p;
+    const cx = p.x + pw/2, cy = p.y + ph/2;
+    const angle = -p.rot * Math.PI / 180;
+    const dx = x - cx, dy = y - cy;
+    const lx = dx * Math.cos(angle) - dy * Math.sin(angle) + pw/2;
+    const ly = dx * Math.sin(angle) + dy * Math.cos(angle) + ph/2;
+    if (lx >= -pad && lx <= pw+pad && ly >= -pad && ly <= ph+pad) return p;
   }
   return null;
 }
 
-cvs.addEventListener('touchstart', e => {
-  e.preventDefault();
-  const {x, y} = canvasXY(e.touches[0]);
+function startDrag(x, y) {
+  touchSX = x; touchSY = y; touchST = Date.now(); touchMoved = false;
   dragging = findPiece(x, y);
   if (dragging) {
     dragOX = x - dragging.x;
     dragOY = y - dragging.y;
     dragging.z = ++maxZ;
   }
-}, {passive: false});
-
-cvs.addEventListener('touchmove', e => {
-  e.preventDefault();
+}
+function moveDrag(x, y) {
   if (!dragging) return;
-  const {x, y} = canvasXY(e.touches[0]);
+  if (Math.hypot(x - touchSX, y - touchSY) > 10) touchMoved = true;
   dragging.x = x - dragOX;
   dragging.y = y - dragOY;
   render();
-}, {passive: false});
-
-cvs.addEventListener('touchend', e => {
-  e.preventDefault();
+}
+function endDrag() {
   if (!dragging) return;
+  const elapsed = Date.now() - touchST;
+  // 回転モード：ほぼ動かず短時間 → タップ = 90°回転
+  if (rotationMode && !touchMoved && elapsed < 300) {
+    dragging.rot = (dragging.rot + 90) % 360;
+    dragging = null;
+    render();
+    return;
+  }
   trySnap(dragging);
   dragging = null;
   render();
   checkComplete();
-}, {passive: false});
+}
 
-// Mouse support (desktop testing)
+cvs.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const {x, y} = canvasXY(e.touches[0]);
+  startDrag(x, y);
+}, {passive: false});
+cvs.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const {x, y} = canvasXY(e.touches[0]);
+  moveDrag(x, y);
+}, {passive: false});
+cvs.addEventListener('touchend', e => { e.preventDefault(); endDrag(); }, {passive: false});
+
+// マウス（デスクトップ確認用）
 cvs.addEventListener('mousedown', e => {
   const r = cvs.getBoundingClientRect();
-  const x = e.clientX - r.left, y = e.clientY - r.top;
-  dragging = findPiece(x, y);
-  if (dragging) { dragOX = x - dragging.x; dragOY = y - dragging.y; dragging.z = ++maxZ; }
+  startDrag(e.clientX - r.left, e.clientY - r.top);
 });
 cvs.addEventListener('mousemove', e => {
-  if (!dragging) return;
   const r = cvs.getBoundingClientRect();
-  dragging.x = e.clientX - r.left - dragOX;
-  dragging.y = e.clientY - r.top  - dragOY;
-  render();
+  moveDrag(e.clientX - r.left, e.clientY - r.top);
 });
-cvs.addEventListener('mouseup', e => {
-  if (!dragging) return;
-  trySnap(dragging); dragging = null; render(); checkComplete();
+cvs.addEventListener('mouseup', endDrag);
+// 右クリックで回転（デスクトップ用）
+cvs.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  if (!rotationMode) return;
+  const r = cvs.getBoundingClientRect();
+  const p = findPiece(e.clientX - r.left, e.clientY - r.top);
+  if (p) { p.rot = (p.rot + 90) % 360; render(); }
 });
 
 // ══ TIMER ══
@@ -649,10 +711,10 @@ function stopTimer() {
 // ══ COMPLETE SCREEN ══
 function showComplete() {
   $('comp-time').textContent = formatTime(elapsedMs);
-  const label = DIFF[currentDiff].label;
+  const label = DIFF[currentDiff].label + (rotationMode ? ' (回転あり)' : '');
   $('rec-diff-label').textContent = `BEST ${MAX_REC} — ${label}`;
 
-  const isNew = isNewRecord(currentPuzzleId, currentDiff, elapsedMs);
+  const isNew = isNewRecord(elapsedMs);
   if (isNew) {
     showNameModal();
   } else {
@@ -662,7 +724,7 @@ function showComplete() {
 }
 
 function renderRecords(newTime) {
-  const recs = loadRecs(currentPuzzleId, currentDiff);
+  const recs = loadRecs(recKey());
   const el = $('records-list');
   el.innerHTML = '';
   if (!recs.length) {
@@ -688,9 +750,7 @@ function showNameModal() {
 }
 function closeNameModal(name) {
   $('name-modal').classList.remove('on');
-  if (name !== null) {
-    addRecord(currentPuzzleId, currentDiff, name, elapsedMs);
-  }
+  if (name !== null) addRecord(name, elapsedMs);
   renderRecords(name !== null ? elapsedMs : null);
   show('complete');
 }
@@ -744,21 +804,29 @@ $('btn-plist-next').addEventListener('click', () => {
   if (selectedListId) showDifficulty(selectedListId);
 });
 
-document.querySelectorAll('.diff-card').forEach(el => {
-  el.addEventListener('click', () => {
-    startGame(currentPuzzleId, el.dataset.diff);
-  });
+// 回転トグル
+$('rot-off').addEventListener('click', () => {
+  rotationMode = false;
+  $('rot-off').classList.add('active');
+  $('rot-on').classList.remove('active');
+  $('rot-hint').style.display = 'none';
 });
-$('btn-diff-back').addEventListener('click', () => {
-  const pzls = loadPuzzles();
-  // go back to list if came from list, else home
-  if (pzls.length > 0) showPuzzleList(); else show('home');
+$('rot-on').addEventListener('click', () => {
+  rotationMode = true;
+  $('rot-on').classList.add('active');
+  $('rot-off').classList.remove('active');
+  $('rot-hint').style.display = 'block';
 });
 
-$('btn-game-quit').addEventListener('click', () => {
-  stopTimer();
-  showPuzzleList();
+// 難易度カード
+document.querySelectorAll('.diff-card').forEach(el => {
+  el.addEventListener('click', () => startGame(currentPuzzleId, el.dataset.diff));
 });
+$('btn-diff-back').addEventListener('click', () => {
+  if (loadPuzzles().length > 0) showPuzzleList(); else show('home');
+});
+
+$('btn-game-quit').addEventListener('click', () => { stopTimer(); showPuzzleList(); });
 $('btn-comp-home').addEventListener('click', () => show('home'));
 $('btn-comp-replay').addEventListener('click', () => startGame(currentPuzzleId, currentDiff));
 </script>
