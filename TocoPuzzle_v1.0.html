@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TocoPuzzle v1.0</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#1a1a2e;--panel:#16213e;--border:#2a3a55;
+  --accent:#a0c4ff;--gold:#ffd166;--dim:#4a5f72;--text:#ddeeff;
+  --red:#ff6b6b;--green:#06d6a0;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:'Helvetica Neue',Arial,sans-serif;user-select:none;
+  -webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
+body{display:flex;align-items:center;justify-content:center;}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;align-items:center;
+  width:100%;height:100%;padding:0;overflow-y:auto;}
+.screen.on{display:flex;}
+
+/* ── BUTTONS ── */
+.btn{display:block;width:100%;padding:14px;font-size:1rem;
+  letter-spacing:1px;border-radius:10px;border:none;cursor:pointer;
+  font-family:inherit;transition:opacity .15s;}
+.btn:active{opacity:.75;}
+.btn-primary{background:var(--accent);color:#0d0d1a;font-weight:700;}
+.btn-ghost{background:transparent;border:1px solid var(--dim);color:var(--dim);}
+.btn-danger{background:transparent;border:1px solid var(--red);color:var(--red);}
+.btn-gold{background:var(--gold);color:#0d0d1a;font-weight:700;}
+.btn-sm{padding:9px 18px;width:auto;font-size:.85rem;}
+
+/* ── HOME ── */
+#home{gap:0;justify-content:center;padding:28px 24px;}
+.home-logo{font-size:2.4rem;font-weight:900;letter-spacing:2px;
+  color:var(--accent);text-shadow:0 0 24px rgba(160,196,255,.4);margin-bottom:4px;}
+.home-sub{font-size:.75rem;color:var(--dim);letter-spacing:2px;margin-bottom:40px;}
+.home-actions{width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;}
+
+/* ── PUZZLE LIST ── */
+#puzzle-list{padding:16px;}
+.screen-title{font-size:1rem;letter-spacing:2px;color:var(--accent);
+  text-align:center;padding:16px 0 12px;flex-shrink:0;}
+.plist-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  width:100%;padding-bottom:80px;}
+.plist-item{position:relative;border-radius:10px;overflow:hidden;
+  background:var(--panel);border:2px solid var(--border);cursor:pointer;
+  aspect-ratio:1;}
+.plist-item.selected{border-color:var(--accent);}
+.plist-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.plist-item .del-btn{position:absolute;top:4px;right:4px;width:22px;height:22px;
+  background:rgba(255,107,107,.85);border:none;border-radius:50%;color:#fff;
+  font-size:13px;line-height:22px;text-align:center;cursor:pointer;}
+.plist-empty{text-align:center;color:var(--dim);font-size:.85rem;
+  padding:40px 20px;grid-column:1/-1;}
+.plist-bottom{position:fixed;bottom:0;left:0;right:0;padding:14px 20px;
+  background:linear-gradient(transparent,var(--bg) 40%);display:flex;gap:10px;}
+
+/* ── DIFFICULTY ── */
+#difficulty{padding:20px 24px;gap:14px;justify-content:flex-start;}
+#diff-preview{width:100%;max-width:280px;border-radius:12px;overflow:hidden;
+  border:1px solid var(--border);flex-shrink:0;}
+#diff-preview img{width:100%;display:block;}
+.diff-cards{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;}
+.diff-card{background:var(--panel);border:2px solid var(--border);
+  border-radius:12px;padding:14px 18px;cursor:pointer;display:flex;
+  align-items:center;justify-content:space-between;transition:border-color .15s;}
+.diff-card:active,.diff-card.sel{border-color:var(--accent);}
+.diff-card .dc-label{font-size:1.05rem;font-weight:700;}
+.diff-card .dc-info{font-size:.78rem;color:var(--dim);}
+.diff-card .dc-pieces{font-size:1.4rem;font-weight:900;color:var(--accent);}
+
+/* ── GAME ── */
+#game{padding:0;position:relative;}
+#game-bar{position:fixed;top:0;left:0;right:0;height:48px;
+  background:rgba(22,33,62,.95);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;z-index:10;flex-shrink:0;}
+.gb-timer{font-size:1.3rem;font-weight:700;color:var(--gold);
+  font-variant-numeric:tabular-nums;}
+.gb-pcs{font-size:.8rem;color:var(--dim);}
+#game-cvs{display:block;touch-action:none;}
+#hint-btn{position:fixed;bottom:14px;right:14px;width:50px;height:50px;
+  border-radius:50%;background:rgba(160,196,255,.15);border:1px solid var(--accent);
+  color:var(--accent);font-size:1.2rem;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;z-index:10;}
+
+/* ── COMPLETE ── */
+#complete{padding:24px 20px;gap:14px;justify-content:flex-start;}
+.complete-title{font-size:1.5rem;font-weight:900;color:var(--green);
+  letter-spacing:2px;text-align:center;padding-top:8px;}
+.complete-time{font-size:2.8rem;font-weight:900;color:var(--gold);
+  text-align:center;font-variant-numeric:tabular-nums;}
+.complete-time small{font-size:1rem;color:var(--dim);margin-left:4px;}
+.records-box{width:100%;max-width:360px;background:var(--panel);
+  border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.records-title{font-size:.65rem;letter-spacing:2px;color:var(--dim);margin-bottom:8px;}
+.record-row{display:flex;align-items:center;padding:5px 0;
+  font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.05);}
+.record-row:last-child{border-bottom:none;}
+.rec-rank{width:24px;color:var(--dim);}
+.rec-rank.g1{color:var(--gold);}
+.rec-rank.g2{color:#bbb;}
+.rec-rank.g3{color:#cd7f32;}
+.rec-name{flex:1;padding:0 8px;color:#ccd;}
+.rec-time{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;}
+.record-row.new-rec .rec-name,.record-row.new-rec .rec-time{color:var(--gold);}
+.rec-empty{text-align:center;color:var(--border);font-size:.75rem;padding:8px 0;}
+.complete-actions{width:100%;max-width:360px;display:flex;gap:10px;}
+
+/* ── NAME MODAL ── */
+#name-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:200;align-items:center;justify-content:center;padding:20px;}
+#name-modal.on{display:flex;}
+.nm-box{background:var(--panel);border:1px solid #446;border-radius:14px;
+  padding:24px 22px;width:100%;max-width:320px;text-align:center;display:flex;
+  flex-direction:column;gap:12px;}
+.nm-title{color:var(--gold);font-size:1rem;font-weight:700;}
+.nm-time{font-size:.85rem;color:var(--dim);}
+#nm-input{background:#0d0d1a;border:1px solid var(--accent);color:#fff;
+  font-family:inherit;font-size:1rem;padding:8px 12px;border-radius:6px;
+  text-align:center;outline:none;width:100%;}
+#nm-input:focus{border-color:var(--gold);}
+.nm-btns{display:flex;gap:8px;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HOME ══════════════ -->
+<div id="home" class="screen on">
+  <div class="home-logo">TocoPuzzle</div>
+  <div class="home-sub">v1.0</div>
+  <div class="home-actions">
+    <button class="btn btn-primary" id="btn-new">📷 新しいパズルを作る</button>
+    <button class="btn btn-ghost"   id="btn-saved">🧩 保存したパズルで遊ぶ</button>
+  </div>
+  <!-- hidden file input -->
+  <input type="file" id="file-input" accept="image/*" style="display:none">
+</div>
+
+<!-- ══════════════ PUZZLE LIST ══════════════ -->
+<div id="puzzle-list" class="screen">
+  <div class="screen-title">パズルを選ぶ</div>
+  <div class="plist-grid" id="plist-grid"></div>
+  <div class="plist-bottom">
+    <button class="btn btn-ghost btn-sm" id="btn-plist-back">← 戻る</button>
+    <button class="btn btn-primary btn-sm" id="btn-plist-next" style="display:none">次へ →</button>
+  </div>
+</div>
+
+<!-- ══════════════ DIFFICULTY ══════════════ -->
+<div id="difficulty" class="screen">
+  <div class="screen-title">難易度を選ぶ</div>
+  <div id="diff-preview"><img id="diff-img" src="" alt=""></div>
+  <div class="diff-cards">
+    <div class="diff-card" data-diff="easy">
+      <div><div class="dc-label">かんたん</div><div class="dc-info">4 × 4</div></div>
+      <div class="dc-pieces">16</div>
+    </div>
+    <div class="diff-card" data-diff="normal">
+      <div><div class="dc-label">ふつう</div><div class="dc-info">5 × 5</div></div>
+      <div class="dc-pieces">25</div>
+    </div>
+    <div class="diff-card" data-diff="hard">
+      <div><div class="dc-label">むずかしい</div><div class="dc-info">6 × 6</div></div>
+      <div class="dc-pieces">36</div>
+    </div>
+  </div>
+  <div style="width:100%;max-width:360px;display:flex;gap:10px;margin-top:4px;">
+    <button class="btn btn-ghost btn-sm" id="btn-diff-back">← 戻る</button>
+  </div>
+</div>
+
+<!-- ══════════════ GAME ══════════════ -->
+<div id="game" class="screen">
+  <div id="game-bar">
+    <button class="btn btn-ghost btn-sm" id="btn-game-quit" style="width:auto;padding:6px 14px">やめる</button>
+    <div>
+      <span class="gb-timer" id="timer-disp">0:00</span>
+      <span class="gb-pcs" id="pieces-disp"></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btn-hint" style="width:auto;padding:6px 14px">ヒント</button>
+  </div>
+  <canvas id="game-cvs"></canvas>
+</div>
+
+<!-- ══════════════ COMPLETE ══════════════ -->
+<div id="complete" class="screen">
+  <div class="complete-title">🎉 パズル完成！</div>
+  <div class="complete-time" id="comp-time">0:00</div>
+  <div class="records-box">
+    <div class="records-title" id="rec-diff-label">BEST 3 — かんたん</div>
+    <div id="records-list"></div>
+  </div>
+  <div class="complete-actions">
+    <button class="btn btn-ghost" id="btn-comp-home">ホームへ</button>
+    <button class="btn btn-primary" id="btn-comp-replay">もう一度</button>
+  </div>
+</div>
+
+<!-- ══════════════ NAME MODAL ══════════════ -->
+<div id="name-modal">
+  <div class="nm-box">
+    <div class="nm-title">🏆 ベストタイム更新！</div>
+    <div class="nm-time" id="nm-time-disp"></div>
+    <input id="nm-input" type="text" maxlength="10" placeholder="なまえ" autocomplete="off" enterkeyhint="done">
+    <div class="nm-btns">
+      <button class="btn btn-ghost btn-sm" id="btn-nm-skip" style="flex:1">スキップ</button>
+      <button class="btn btn-gold btn-sm" id="btn-nm-save" style="flex:2">登録する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══ CONSTANTS ══
+const DIFF = {
+  easy:   { cols:4, rows:4, label:'かんたん' },
+  normal: { cols:5, rows:5, label:'ふつう'   },
+  hard:   { cols:6, rows:6, label:'むずかしい' },
+};
+const SK_PUZZLES  = 'tp_puz';
+const SK_REC      = 'tp_rec_'; // + puzzleId + '_' + diff
+const MAX_REC     = 3;
+const MAX_IMG_DIM = 900;
+const MAX_THUMB   = 200;
+const BAR_H       = 48;
+
+// ══ STATE ══
+let currentPuzzleId = null;
+let currentDiff     = null;
+let selectedListId  = null; // in puzzle-list screen
+let puzzleImg       = null; // Image object
+let pieces          = [];
+let hEdges = [], vEdges = [];
+let cols = 3, rows = 3, pw = 0, ph = 0;
+let boardX = 0, boardY = 0, boardW = 0, boardH = 0;
+let dragging = null, dragOX = 0, dragOY = 0, maxZ = 0;
+let startTime = 0, timerIv = null, elapsedMs = 0;
+let hintVisible = false;
+
+// ══ DOM ══
+const $ = id => document.getElementById(id);
+const cvs  = $('game-cvs');
+const ctx  = cvs.getContext('2d');
+
+// ══ SCREENS ══
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+
+// ══ STORAGE ══
+function loadPuzzles() {
+  try { return JSON.parse(localStorage.getItem(SK_PUZZLES)) || []; } catch { return []; }
+}
+function savePuzzles(arr) {
+  try { localStorage.setItem(SK_PUZZLES, JSON.stringify(arr)); } catch(e) {
+    alert('保存容量が不足しています。古いパズルを削除してください。');
+  }
+}
+function loadRecs(pid, diff) {
+  try { return JSON.parse(localStorage.getItem(SK_REC + pid + '_' + diff)) || []; } catch { return []; }
+}
+function saveRecs(pid, diff, arr) {
+  localStorage.setItem(SK_REC + pid + '_' + diff, JSON.stringify(arr));
+}
+function isNewRecord(pid, diff, ms) {
+  const r = loadRecs(pid, diff);
+  return r.length < MAX_REC || ms < r[r.length - 1].time;
+}
+function addRecord(pid, diff, name, ms) {
+  const r = loadRecs(pid, diff);
+  r.push({ name: (name||'ゲスト').trim()||'ゲスト', time: ms });
+  r.sort((a,b) => a.time - b.time);
+  r.length = Math.min(r.length, MAX_REC);
+  saveRecs(pid, diff, r);
+  return r;
+}
+
+// ══ IMAGE UTILS ══
+function compressImg(dataUrl, maxDim, q) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const sc = Math.min(maxDim / img.width, maxDim / img.height, 1);
+      const w = Math.round(img.width * sc), h = Math.round(img.height * sc);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(c.toDataURL('image/jpeg', q));
+    };
+    img.src = dataUrl;
+  });
+}
+function loadImage(src) {
+  return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = src; });
+}
+function formatTime(ms) {
+  const s = Math.floor(ms / 1000), m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2,'0')}`;
+}
+
+// ══ PUZZLE LIST SCREEN ══
+function showPuzzleList() {
+  selectedListId = null;
+  $('btn-plist-next').style.display = 'none';
+  const grid = $('plist-grid');
+  grid.innerHTML = '';
+  const pzls = loadPuzzles();
+  if (!pzls.length) {
+    grid.innerHTML = '<div class="plist-empty">保存されたパズルがありません。<br>ホームから写真を選んでください。</div>';
+  } else {
+    pzls.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'plist-item';
+      el.dataset.id = p.id;
+      el.innerHTML = `<img src="${p.thumb}" alt="${p.name}">
+        <button class="del-btn" data-id="${p.id}">✕</button>`;
+      el.addEventListener('click', (e) => {
+        if (e.target.classList.contains('del-btn')) {
+          e.stopPropagation();
+          deletePuzzle(p.id);
+          return;
+        }
+        document.querySelectorAll('.plist-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedListId = p.id;
+        $('btn-plist-next').style.display = 'block';
+      });
+      grid.appendChild(el);
+    });
+  }
+  show('puzzle-list');
+}
+function deletePuzzle(id) {
+  if (!confirm('このパズルを削除しますか？')) return;
+  let pzls = loadPuzzles().filter(p => p.id !== id);
+  savePuzzles(pzls);
+  // Remove records
+  Object.values(DIFF).forEach((_,k) => {
+    const key = Object.keys(DIFF)[k];
+    localStorage.removeItem(SK_REC + id + '_' + key);
+  });
+  showPuzzleList();
+}
+
+// ══ DIFFICULTY SCREEN ══
+async function showDifficulty(puzzleId) {
+  currentPuzzleId = puzzleId;
+  const pzls = loadPuzzles();
+  const p = pzls.find(x => x.id === puzzleId);
+  if (!p) { show('home'); return; }
+  $('diff-img').src = p.thumb;
+  show('difficulty');
+}
+
+// ══ GAME INIT ══
+async function startGame(puzzleId, diff) {
+  currentPuzzleId = puzzleId;
+  currentDiff     = diff;
+  const pzls = loadPuzzles();
+  const pdata = pzls.find(x => x.id === puzzleId);
+  if (!pdata) { show('home'); return; }
+
+  show('game');
+  $('pieces-disp').textContent = '';
+
+  // Load image
+  puzzleImg = await loadImage(pdata.image);
+
+  // Setup canvas
+  cvs.width  = window.innerWidth;
+  cvs.height = window.innerHeight - BAR_H;
+  cvs.style.marginTop = BAR_H + 'px';
+
+  // Board layout: image fits in top ~58% of canvas
+  const d = DIFF[diff];
+  cols = d.cols; rows = d.rows;
+  const maxBW = cvs.width  * 0.92;
+  const maxBH = cvs.height * 0.58;
+  const sc = Math.min(maxBW / puzzleImg.width, maxBH / puzzleImg.height);
+  boardW = Math.round(puzzleImg.width  * sc);
+  boardH = Math.round(puzzleImg.height * sc);
+  boardX = Math.round((cvs.width - boardW) / 2);
+  boardY = 6;
+  pw = boardW / cols;
+  ph = boardH / rows;
+
+  // Generate edge tabs
+  hEdges = Array.from({length: rows-1}, () =>
+    Array.from({length: cols}, () => Math.random() < .5 ? 1 : -1));
+  vEdges = Array.from({length: rows}, () =>
+    Array.from({length: cols-1}, () => Math.random() < .5 ? 1 : -1));
+
+  // Create pieces
+  pieces = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      pieces.push({
+        col: c, row: r,
+        x: 0, y: 0,
+        placed: false, z: 0,
+        tabs: {
+          top:    r > 0      ? -hEdges[r-1][c] : 0,
+          bottom: r < rows-1 ?  hEdges[r][c]   : 0,
+          left:   c > 0      ? -vEdges[r][c-1] : 0,
+          right:  c < cols-1 ?  vEdges[r][c]   : 0,
+        }
+      });
+    }
+  }
+
+  scatterPieces();
+  hintVisible = false;
+  render();
+  startTimer();
+}
+
+function scatterPieces() {
+  maxZ = 0;
+  const pad = Math.ceil(Math.max(pw, ph) * 0.35);
+  const areaY = boardY + boardH + pad;
+  const areaH = cvs.height - areaY - pad;
+  const allW  = cvs.width - pw - pad * 2;
+  // Shuffle
+  for (let i = pieces.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+  }
+  pieces.forEach((p, i) => {
+    p.placed = false;
+    p.z = i;
+    if (areaH > ph + 10) {
+      p.x = pad + Math.random() * allW;
+      p.y = areaY + Math.random() * Math.max(0, areaH - ph);
+    } else {
+      // fallback: scatter across full canvas
+      p.x = pad + Math.random() * allW;
+      p.y = pad + Math.random() * (cvs.height - ph - pad * 2);
+    }
+  });
+  maxZ = pieces.length;
+}
+
+// ══ RENDER ══
+function drawEdge(x1, y1, x2, y2, tab) {
+  if (tab === 0) { ctx.lineTo(x2, y2); return; }
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const nx = uy * tab, ny = -ux * tab;
+  const th = len * 0.27;
+  const tw = len * 0.20;
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  ctx.lineTo(mx - ux*tw, my - uy*tw);
+  ctx.bezierCurveTo(
+    mx - ux*tw + nx*th*.6, my - uy*tw + ny*th*.6,
+    mx - ux*tw*.3 + nx*th, my - uy*tw*.3 + ny*th,
+    mx + nx*th,             my + ny*th
+  );
+  ctx.bezierCurveTo(
+    mx + ux*tw*.3 + nx*th, my + uy*tw*.3 + ny*th,
+    mx + ux*tw   + nx*th*.6, my + uy*tw + ny*th*.6,
+    mx + ux*tw,             my + uy*tw
+  );
+  ctx.lineTo(x2, y2);
+}
+
+function piecePath(p) {
+  const {x, y, tabs} = p;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  drawEdge(x,    y,    x+pw, y,    tabs.top);
+  drawEdge(x+pw, y,    x+pw, y+ph, tabs.right);
+  drawEdge(x+pw, y+ph, x,    y+ph, tabs.bottom);
+  drawEdge(x,    y+ph, x,    y,    tabs.left);
+  ctx.closePath();
+}
+
+function drawPiece(p) {
+  ctx.save();
+  if (p === dragging) {
+    ctx.shadowColor = 'rgba(0,0,0,.5)';
+    ctx.shadowBlur  = 14;
+    ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
+  }
+  piecePath(p);
+  ctx.clip();
+  ctx.drawImage(puzzleImg,
+    p.x - p.col * pw,
+    p.y - p.row * ph,
+    boardW, boardH
+  );
+  ctx.restore();
+
+  // border
+  ctx.save();
+  piecePath(p);
+  ctx.strokeStyle = p === dragging ? '#fff' : 'rgba(255,255,255,.55)';
+  ctx.lineWidth   = p === dragging ? 2.5 : 1.2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+  // Board ghost
+  if (hintVisible) {
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.drawImage(puzzleImg, boardX, boardY, boardW, boardH);
+    ctx.restore();
+  }
+  ctx.strokeStyle = 'rgba(160,196,255,.2)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(boardX, boardY, boardW, boardH);
+  // inner grid
+  ctx.strokeStyle = 'rgba(160,196,255,.1)';
+  for (let c = 1; c < cols; c++) {
+    ctx.beginPath();
+    ctx.moveTo(boardX + c*pw, boardY);
+    ctx.lineTo(boardX + c*pw, boardY + boardH);
+    ctx.stroke();
+  }
+  for (let r = 1; r < rows; r++) {
+    ctx.beginPath();
+    ctx.moveTo(boardX,        boardY + r*ph);
+    ctx.lineTo(boardX+boardW, boardY + r*ph);
+    ctx.stroke();
+  }
+
+  // Placed pieces (bottom)
+  const sorted = [...pieces].sort((a,b) => a.z - b.z);
+  sorted.filter(p => p.placed).forEach(drawPiece);
+  // Unplaced
+  sorted.filter(p => !p.placed && p !== dragging).forEach(drawPiece);
+  // Dragging on top
+  if (dragging) drawPiece(dragging);
+
+  // Piece count
+  const done = pieces.filter(p => p.placed).length;
+  $('pieces-disp').textContent = ` ${done}/${pieces.length}`;
+}
+
+// ══ SNAP ══
+function trySnap(p) {
+  const tx = boardX + p.col * pw;
+  const ty = boardY + p.row * ph;
+  const snapD = Math.max(pw * 0.38, 28);
+  if (Math.hypot(p.x - tx, p.y - ty) < snapD) {
+    p.x = tx; p.y = ty; p.placed = true;
+  }
+}
+
+function checkComplete() {
+  if (pieces.every(p => p.placed)) {
+    stopTimer();
+    showComplete();
+  }
+}
+
+// ══ TOUCH ══
+function canvasXY(touch) {
+  const rect = cvs.getBoundingClientRect();
+  return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+}
+function findPiece(x, y) {
+  const pad = Math.ceil(Math.max(pw, ph) * 0.32);
+  // reverse z-order (top piece first)
+  const sorted = [...pieces].sort((a,b) => b.z - a.z);
+  for (const p of sorted) {
+    if (p.placed) continue;
+    if (x >= p.x - pad && x <= p.x + pw + pad &&
+        y >= p.y - pad && y <= p.y + ph + pad) return p;
+  }
+  return null;
+}
+
+cvs.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const {x, y} = canvasXY(e.touches[0]);
+  dragging = findPiece(x, y);
+  if (dragging) {
+    dragOX = x - dragging.x;
+    dragOY = y - dragging.y;
+    dragging.z = ++maxZ;
+  }
+}, {passive: false});
+
+cvs.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!dragging) return;
+  const {x, y} = canvasXY(e.touches[0]);
+  dragging.x = x - dragOX;
+  dragging.y = y - dragOY;
+  render();
+}, {passive: false});
+
+cvs.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (!dragging) return;
+  trySnap(dragging);
+  dragging = null;
+  render();
+  checkComplete();
+}, {passive: false});
+
+// Mouse support (desktop testing)
+cvs.addEventListener('mousedown', e => {
+  const r = cvs.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  dragging = findPiece(x, y);
+  if (dragging) { dragOX = x - dragging.x; dragOY = y - dragging.y; dragging.z = ++maxZ; }
+});
+cvs.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const r = cvs.getBoundingClientRect();
+  dragging.x = e.clientX - r.left - dragOX;
+  dragging.y = e.clientY - r.top  - dragOY;
+  render();
+});
+cvs.addEventListener('mouseup', e => {
+  if (!dragging) return;
+  trySnap(dragging); dragging = null; render(); checkComplete();
+});
+
+// ══ TIMER ══
+function startTimer() {
+  startTime = Date.now();
+  clearInterval(timerIv);
+  timerIv = setInterval(() => {
+    elapsedMs = Date.now() - startTime;
+    $('timer-disp').textContent = formatTime(elapsedMs);
+  }, 500);
+}
+function stopTimer() {
+  clearInterval(timerIv);
+  elapsedMs = Date.now() - startTime;
+  $('timer-disp').textContent = formatTime(elapsedMs);
+}
+
+// ══ COMPLETE SCREEN ══
+function showComplete() {
+  $('comp-time').textContent = formatTime(elapsedMs);
+  const label = DIFF[currentDiff].label;
+  $('rec-diff-label').textContent = `BEST ${MAX_REC} — ${label}`;
+
+  const isNew = isNewRecord(currentPuzzleId, currentDiff, elapsedMs);
+  if (isNew) {
+    showNameModal();
+  } else {
+    renderRecords(null);
+    show('complete');
+  }
+}
+
+function renderRecords(newTime) {
+  const recs = loadRecs(currentPuzzleId, currentDiff);
+  const el = $('records-list');
+  el.innerHTML = '';
+  if (!recs.length) {
+    el.innerHTML = '<div class="rec-empty">記録なし</div>'; return;
+  }
+  recs.forEach((r, i) => {
+    const isNew = newTime !== null && r.time === newTime;
+    const cl = i===0?'g1':i===1?'g2':'g3';
+    el.innerHTML += `<div class="record-row${isNew?' new-rec':''}">
+      <span class="rec-rank ${cl}">${i+1}.</span>
+      <span class="rec-name">${r.name}</span>
+      <span class="rec-time">${formatTime(r.time)}</span>
+    </div>`;
+  });
+}
+
+// ══ NAME MODAL ══
+function showNameModal() {
+  $('nm-time-disp').textContent = formatTime(elapsedMs) + ' を記録！';
+  $('nm-input').value = '';
+  $('name-modal').classList.add('on');
+  setTimeout(() => $('nm-input').focus(), 100);
+}
+function closeNameModal(name) {
+  $('name-modal').classList.remove('on');
+  if (name !== null) {
+    addRecord(currentPuzzleId, currentDiff, name, elapsedMs);
+  }
+  renderRecords(name !== null ? elapsedMs : null);
+  show('complete');
+}
+
+$('btn-nm-save').addEventListener('click', () => {
+  closeNameModal($('nm-input').value);
+});
+$('nm-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') closeNameModal($('nm-input').value);
+});
+$('btn-nm-skip').addEventListener('click', () => closeNameModal(null));
+
+// ══ HINT ══
+$('btn-hint').addEventListener('click', () => {
+  hintVisible = !hintVisible;
+  $('btn-hint').textContent = hintVisible ? 'ヒント ON' : 'ヒント';
+  render();
+});
+
+// ══ PHOTO SAVE ══
+async function saveNewPuzzle(dataUrl) {
+  const [thumb, image] = await Promise.all([
+    compressImg(dataUrl, MAX_THUMB, .8),
+    compressImg(dataUrl, MAX_IMG_DIM, .85),
+  ]);
+  const pzls = loadPuzzles();
+  const id   = 'p' + Date.now();
+  const name = '写真' + (pzls.length + 1);
+  pzls.push({ id, name, thumb, image, created: Date.now() });
+  savePuzzles(pzls);
+  return id;
+}
+
+// ══ BUTTON EVENTS ══
+$('btn-new').addEventListener('click', () => $('file-input').click());
+$('file-input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $('file-input').value = '';
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const id = await saveNewPuzzle(ev.target.result);
+    showDifficulty(id);
+  };
+  reader.readAsDataURL(file);
+});
+
+$('btn-saved').addEventListener('click', showPuzzleList);
+$('btn-plist-back').addEventListener('click', () => show('home'));
+$('btn-plist-next').addEventListener('click', () => {
+  if (selectedListId) showDifficulty(selectedListId);
+});
+
+document.querySelectorAll('.diff-card').forEach(el => {
+  el.addEventListener('click', () => {
+    startGame(currentPuzzleId, el.dataset.diff);
+  });
+});
+$('btn-diff-back').addEventListener('click', () => {
+  const pzls = loadPuzzles();
+  // go back to list if came from list, else home
+  if (pzls.length > 0) showPuzzleList(); else show('home');
+});
+
+$('btn-game-quit').addEventListener('click', () => {
+  stopTimer();
+  showPuzzleList();
+});
+$('btn-comp-home').addEventListener('click', () => show('home'));
+$('btn-comp-replay').addEventListener('click', () => startGame(currentPuzzleId, currentDiff));
+</script>
+</body>
+</html>
