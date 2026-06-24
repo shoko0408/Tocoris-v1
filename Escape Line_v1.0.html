@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Escape Line v1.0</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d1117;--panel:#161b22;--border:#30363d;
+  --accent:#58a6ff;--green:#3fb950;--red:#f85149;
+  --gold:#e3b341;--text:#c9d1d9;--dim:#8b949e;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);
+  font-family:'Helvetica Neue',Arial,sans-serif;color:var(--text);
+  user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+/* ── CANVAS ── */
+#cvs{display:block;touch-action:none;cursor:crosshair;}
+
+/* ── HUD ── */
+#hud{
+  position:fixed;top:0;left:0;right:0;height:52px;
+  background:rgba(13,17,23,.95);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;z-index:20;flex-shrink:0;
+}
+.hud-info{display:flex;gap:16px;align-items:center;}
+.hud-label{font-size:.62rem;letter-spacing:1px;color:var(--dim);}
+.hud-val{font-size:1.1rem;font-weight:700;color:var(--text);}
+.hud-btn{
+  padding:7px 16px;border-radius:6px;font-family:inherit;font-size:.82rem;
+  letter-spacing:1px;cursor:pointer;border:1px solid;transition:all .12s;
+}
+#btn-clear{border-color:var(--border);background:transparent;color:var(--dim);}
+#btn-clear:hover{border-color:var(--dim);color:var(--text);}
+#btn-run{
+  border-color:var(--green);background:rgba(63,185,80,.15);color:var(--green);
+  font-weight:700;
+}
+#btn-run:disabled{border-color:var(--border);background:transparent;color:var(--border);cursor:default;}
+#btn-run:not(:disabled):hover{background:rgba(63,185,80,.3);}
+.hud-btns{display:flex;gap:8px;}
+
+/* ── HINT ── */
+#hint{
+  position:fixed;bottom:0;left:0;right:0;
+  text-align:center;font-size:.75rem;color:var(--dim);
+  padding:8px;background:rgba(13,17,23,.85);z-index:20;
+  pointer-events:none;letter-spacing:.5px;
+}
+
+/* ── SCREENS ── */
+.screen{
+  display:none;position:fixed;inset:0;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;padding:24px;z-index:100;
+  background:rgba(13,17,23,.94);
+}
+.screen.on{display:flex;}
+
+/* Title */
+#s-title{gap:12px;}
+.game-logo{font-size:2.6rem;font-weight:900;letter-spacing:4px;
+  background:linear-gradient(135deg,#58a6ff,#3fb950);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;text-shadow:none;}
+.game-sub{font-size:.78rem;letter-spacing:3px;color:var(--dim);}
+.best-box{background:var(--panel);border:1px solid var(--border);
+  border-radius:8px;padding:12px 24px;text-align:center;}
+.best-title{font-size:.62rem;letter-spacing:2px;color:var(--dim);margin-bottom:4px;}
+.best-name{font-size:1rem;color:var(--gold);font-weight:700;}
+.best-score{font-size:1.8rem;font-weight:900;color:var(--gold);}
+.btn-screen{
+  padding:13px 36px;border-radius:8px;font-family:inherit;font-size:1rem;
+  font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .15s;
+  border:none;
+}
+.btn-primary{background:var(--accent);color:#0d1117;}
+.btn-primary:hover{opacity:.85;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--dim);}
+.btn-ghost:hover{border-color:var(--dim);color:var(--text);}
+.rule-box{max-width:340px;background:var(--panel);border:1px solid var(--border);
+  border-radius:8px;padding:14px 18px;}
+.rule-box ul{padding-left:1.2em;}
+.rule-box li{font-size:.78rem;color:var(--dim);line-height:2;}
+.rule-box li span{color:var(--text);}
+
+/* Message overlay */
+#s-msg{gap:14px;}
+.msg-title{font-size:2rem;font-weight:900;letter-spacing:4px;}
+.msg-clear{color:var(--green);}
+.msg-over{color:var(--red);}
+.msg-sub{font-size:.88rem;color:var(--dim);text-align:center;}
+.msg-score{font-size:1.4rem;font-weight:700;color:var(--gold);}
+.msg-btns{display:flex;gap:12px;margin-top:4px;}
+
+/* Name input */
+#s-name{gap:14px;}
+.ni-title{font-size:1rem;color:var(--gold);font-weight:700;}
+.ni-score{font-size:1.6rem;font-weight:900;color:var(--gold);}
+#ni-input{
+  background:var(--panel);border:1px solid var(--accent);color:var(--text);
+  font-family:inherit;font-size:1rem;padding:8px 16px;border-radius:6px;
+  text-align:center;outline:none;width:200px;
+}
+#ni-input:focus{border-color:var(--gold);}
+
+/* ── RANKING ── */
+.rank-box{width:280px;background:var(--panel);border:1px solid var(--border);
+  border-radius:8px;padding:12px 16px;}
+.rank-head{font-size:.62rem;letter-spacing:2px;color:var(--dim);margin-bottom:8px;}
+.rank-row{display:flex;align-items:center;padding:4px 0;font-size:.82rem;
+  border-bottom:1px solid rgba(255,255,255,.05);}
+.rank-row:last-child{border-bottom:none;}
+.rn{width:22px;color:var(--dim);}
+.rn.g1{color:var(--gold);}
+.rn.g2{color:#8b949e;}
+.rn.g3{color:#cd7f32;}
+.rname{flex:1;padding:0 8px;color:var(--text);}
+.rscore{color:var(--accent);font-weight:700;}
+.rank-empty{text-align:center;color:var(--border);font-size:.75rem;padding:8px 0;}
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud" style="display:none">
+  <div class="hud-info">
+    <div><div class="hud-label">LEVEL</div><div class="hud-val" id="h-level">1</div></div>
+    <div><div class="hud-label">SCORE</div><div class="hud-val" id="h-score">0</div></div>
+  </div>
+  <div class="hud-btns">
+    <button class="hud-btn" id="btn-clear">消す</button>
+    <button class="hud-btn" id="btn-run" disabled>▶ RUN!</button>
+  </div>
+</div>
+
+<!-- Hint -->
+<div id="hint" style="display:none">スタート🔵からゴール🟡までルートを指で描いてください</div>
+
+<!-- Canvas -->
+<canvas id="cvs"></canvas>
+
+<!-- Title Screen -->
+<div id="s-title" class="screen on">
+  <div class="game-logo">ESCAPE LINE</div>
+  <div class="game-sub">一筆書き脱出ゲーム v1.0</div>
+  <div class="best-box" id="title-best-box">
+    <div class="best-title">BEST SCORE</div>
+    <div class="best-name" id="title-best-name">---</div>
+    <div class="best-score" id="title-best-score">0</div>
+  </div>
+  <div class="rule-box">
+    <ul>
+      <li><span>指でルートを1本描く</span>（消してやり直しOK）</li>
+      <li><span>RUN!</span> でキャラクターが自動移動</li>
+      <li><span>🔴 警備員</span>の赤い円に入ると捕まる</li>
+      <li><span>🟡 監視カメラ</span>の黄色い扇形に入ると捕まる</li>
+      <li><span>🟡 ゴール</span>まで到達したらクリア！</li>
+    </ul>
+  </div>
+  <button class="btn-screen btn-primary" id="btn-title-start">START GAME</button>
+</div>
+
+<!-- Message Screen (clear / gameover) -->
+<div id="s-msg" class="screen">
+  <div class="msg-title" id="msg-title-txt"></div>
+  <div class="msg-sub" id="msg-sub-txt"></div>
+  <div class="msg-score" id="msg-score-txt"></div>
+  <div class="rank-box">
+    <div class="rank-head">RANKING</div>
+    <div id="rank-list"></div>
+  </div>
+  <div class="msg-btns" id="msg-btns"></div>
+</div>
+
+<!-- Name Input Screen -->
+<div id="s-name" class="screen">
+  <div class="ni-title">🏆 ベストスコア更新！</div>
+  <div class="ni-score" id="ni-score-txt">0</div>
+  <input id="ni-input" maxlength="12" placeholder="なまえを入力" autocomplete="off" enterkeyhint="done">
+  <div style="display:flex;gap:10px">
+    <button class="btn-screen btn-ghost" id="btn-ni-skip">スキップ</button>
+    <button class="btn-screen btn-primary" id="btn-ni-save">登録</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══ CONFIG ══
+const GW = 520, GH = 720;   // logical game dimensions
+const CHAR_R    = 9;          // character radius
+const CHAR_SPD  = 160;        // logical px/s
+const GOAL_R    = 36;         // goal snap radius
+const SNAP_R    = 55;         // start snap radius (must begin drawing near start)
+const SAVE_KEY  = 'escapeline_v1_scores';
+const MAX_RANK  = 5;
+
+// ══ CANVAS ══
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+let sx = 1, sy = 1, offX = 0, offY = 0;
+const HUD_H = 52, HINT_H = 32;
+
+function resize() {
+  cvs.width  = window.innerWidth;
+  cvs.height = window.innerHeight;
+  const avW = window.innerWidth;
+  const avH = window.innerHeight - HUD_H - HINT_H;
+  sx = sy = Math.min(avW / GW, avH / GH);
+  offX = (window.innerWidth  - GW * sx) / 2;
+  offY = HUD_H + (avH - GH * sy) / 2;
+}
+window.addEventListener('resize', () => { resize(); if (gameState==='draw'||gameState==='run') render(); });
+
+// Coordinate transform helpers
+const tx  = x => x * sx + offX;
+const ty  = y => y * sy + offY;
+const tlx = px => (px - offX) / sx;
+const tly = py => (py - offY) / sy;
+const ts  = r  => r * sx;         // scale radius
+
+// ══ RANKING ══
+function loadRanks() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch { return []; } }
+function saveRanks(r) { localStorage.setItem(SAVE_KEY, JSON.stringify(r)); }
+function isNewRank(score) {
+  const r = loadRanks();
+  return score > 0 && (r.length < MAX_RANK || score > r[r.length-1].score);
+}
+function addRank(name, score) {
+  const r = loadRanks();
+  r.push({ name: (name||'ゲスト').trim()||'ゲスト', score });
+  r.sort((a,b) => b.score - a.score);
+  r.length = Math.min(r.length, MAX_RANK);
+  saveRanks(r);
+}
+
+function renderRankList(containerId, hlScore) {
+  const el = document.getElementById(containerId);
+  const ranks = loadRanks();
+  if (!ranks.length) { el.innerHTML = '<div class="rank-empty">まだ記録なし</div>'; return; }
+  el.innerHTML = ranks.map((r,i) => {
+    const c = i===0?'g1':i===1?'g2':i===2?'g3':'';
+    const me = r.score === hlScore && hlScore > 0 ? ' style="color:var(--gold)"' : '';
+    return `<div class="rank-row"><span class="rn ${c}">${i+1}.</span><span class="rname"${me}>${esc(r.name)}</span><span class="rscore">${r.score.toLocaleString()}</span></div>`;
+  }).join('');
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══ LEVEL DATA ══
+// 壁の登場スケジュール:
+//   Lv 1-3: 壁なし（オープンフィールド）
+//   Lv 4-5: 壁1-2枚（初登場）
+//   Lv 6-7: 壁3-4枚（コの字・Z字）
+//   Lv 8-10: 壁5枚以上（迷路化）
+const LEVELS = [
+
+  // Lv.1 オープン・警備員1人
+  {
+    start:{x:80,y:645}, goal:{x:440,y:75},
+    walls:[],
+    guards:[{x:260,y:360,spd:55,rad:80,wp:[{x:75,y:320},{x:445,y:400}]}],
+    cameras:[]
+  },
+
+  // Lv.2 オープン・警備員2人
+  {
+    start:{x:80,y:645}, goal:{x:440,y:75},
+    walls:[],
+    guards:[
+      {x:165,y:415,spd:62,rad:76,wp:[{x:75,y:348},{x:255,y:480}]},
+      {x:355,y:278,spd:62,rad:76,wp:[{x:265,y:202},{x:445,y:352}]}
+    ],
+    cameras:[]
+  },
+
+  // Lv.3 オープン・警備員1人+カメラ1台
+  {
+    start:{x:80,y:645}, goal:{x:440,y:75},
+    walls:[],
+    guards:[{x:215,y:458,spd:65,rad:76,wp:[{x:80,y:395},{x:352,y:518}]}],
+    cameras:[{x:388,y:192,a:Math.PI,spd:.85,cone:Math.PI/3,range:165,
+      osc:true,minA:Math.PI*.55,maxA:Math.PI*1.45}]
+  },
+
+  // Lv.4 壁が1枚登場！横一本の壁（隙間: 左x:25-148, 右x:372-495）
+  {
+    start:{x:80,y:645}, goal:{x:440,y:75},
+    walls:[{x:148,y:305,w:224,h:52}],
+    guards:[
+      {x:260,y:432,spd:68,rad:74,wp:[{x:75,y:378},{x:445,y:484}]},
+      {x:260,y:188,spd:68,rad:74,wp:[{x:75,y:128},{x:445,y:248}]}
+    ],
+    cameras:[]
+  },
+
+  // Lv.5 壁2枚（L字障害物）+カメラ
+  {
+    start:{x:80,y:645}, goal:{x:440,y:75},
+    walls:[
+      {x:195,y:198,w:52,h:218},
+      {x:195,y:390,w:212,h:52},
+    ],
+    guards:[
+      {x:108,y:322,spd:70,rad:74,wp:[{x:58,y:248},{x:182,y:395}]},
+      {x:362,y:298,spd:70,rad:74,wp:[{x:262,y:198},{x:462,y:398}]}
+    ],
+    cameras:[{x:348,y:462,a:-Math.PI/2,spd:1.0,cone:Math.PI/3,range:152,
+      osc:true,minA:-Math.PI*.9,maxA:-Math.PI*.1}]
+  },
+
+  // Lv.6 壁3枚（コの字: 右が開口）+警備員2人+カメラ
+  {
+    start:{x:80,y:645}, goal:{x:440,y:75},
+    walls:[
+      {x:165,y:248,w:52, h:268},
+      {x:165,y:248,w:198,h:52},
+      {x:165,y:465,w:198,h:52},
+    ],
+    guards:[
+      {x:108,y:448,spd:72,rad:74,wp:[{x:58,y:370},{x:152,y:538}]},
+      {x:368,y:388,spd:72,rad:74,wp:[{x:268,y:268},{x:462,y:518}]}
+    ],
+    cameras:[{x:368,y:178,a:Math.PI*.9,spd:1.1,cone:Math.PI/3,range:155,
+      osc:true,minA:Math.PI*.5,maxA:Math.PI*1.3}]
+  },
+
+  // Lv.7 壁2枚（Z字コース）+敵強化
+  {
+    start:{x:120,y:140}, goal:{x:390,y:580},
+    walls:[
+      {x:258,y:25, w:237,h:258},
+      {x:25, y:437,w:237,h:258},
+    ],
+    guards:[
+      {x:260,y:358,spd:75,rad:74,wp:[{x:68,y:320},{x:448,y:395}]},
+      {x:138,y:188,spd:72,rad:72,wp:[{x:58,y:128},{x:242,y:248}]}
+    ],
+    cameras:[{x:392,y:548,a:Math.PI,spd:1.2,cone:Math.PI/3,range:152,
+      osc:true,minA:Math.PI*.55,maxA:Math.PI*1.45}]
+  },
+
+  // Lv.8 壁2枚（S字コース）+カメラ2台
+  {
+    start:{x:388,y:98}, goal:{x:118,y:622},
+    walls:[
+      {x:25, y:218,w:232,h:55},
+      {x:263,y:438,w:232,h:55},
+    ],
+    guards:[
+      {x:362,y:328,spd:78,rad:72,wp:[{x:265,y:265},{x:460,y:395}]},
+      {x:128,y:535,spd:78,rad:72,wp:[{x:52, y:468},{x:248,y:618}]}
+    ],
+    cameras:[
+      {x:128,y:332,a:0,   spd:1.3,cone:Math.PI/3,range:152,osc:true,minA:-.7,maxA:1.9},
+      {x:368,y:542,a:Math.PI,spd:1.2,cone:Math.PI/3,range:152,osc:true,minA:Math.PI*.5,maxA:Math.PI*1.5}
+    ]
+  },
+
+  // Lv.9 壁6枚（十字路+追加仕切り）+カメラ2台
+  {
+    start:{x:260,y:105}, goal:{x:260,y:615},
+    walls:[
+      {x:25, y:25, w:195,h:290},
+      {x:300,y:25, w:195,h:290},
+      {x:25, y:405,w:195,h:290},
+      {x:300,y:405,w:195,h:290},
+      {x:25, y:340,w:130,h:65},
+      {x:365,y:315,w:130,h:65},
+    ],
+    guards:[
+      {x:138,y:355,spd:82,rad:72,wp:[{x:58,y:308},{x:212,y:400}]},
+      {x:378,y:355,spd:82,rad:72,wp:[{x:305,y:308},{x:460,y:400}]}
+    ],
+    cameras:[
+      {x:260,y:355,a:0,spd:1.4,cone:Math.PI/2.5,range:168,osc:false},
+      {x:260,y:148,a:-Math.PI/2,spd:1.2,cone:Math.PI/3,range:155,osc:true,minA:-Math.PI*.8,maxA:-Math.PI*.2}
+    ]
+  },
+
+  // Lv.10 壁8枚（フル迷路）+最大難度
+  {
+    start:{x:80,y:95}, goal:{x:440,y:625},
+    walls:[
+      {x:202,y:25, w:293,h:52},
+      {x:25, y:198,w:230,h:52},
+      {x:265,y:328,w:230,h:52},
+      {x:25, y:458,w:230,h:52},
+      {x:265,y:588,w:230,h:52},
+      {x:167,y:120,w:52, h:233},
+      {x:302,y:252,w:52, h:230},
+      {x:167,y:382,w:52, h:230},
+    ],
+    guards:[
+      {x:375,y:122,spd:90,rad:72,wp:[{x:268,y:68},{x:460,y:185}]},
+      {x:128,y:278,spd:90,rad:72,wp:[{x:48, y:218},{x:213,y:342}]},
+      {x:375,y:398,spd:90,rad:72,wp:[{x:268,y:338},{x:460,y:462}]},
+      {x:128,y:526,spd:90,rad:72,wp:[{x:48, y:466},{x:213,y:588}]}
+    ],
+    cameras:[
+      {x:375,y:268,a:Math.PI,    spd:1.5,cone:Math.PI/3,  range:155,osc:true,minA:Math.PI*.5,maxA:Math.PI*1.5},
+      {x:128,y:398,a:0,          spd:1.5,cone:Math.PI/3,  range:155,osc:true,minA:-.6,maxA:.8},
+      {x:260,y:538,a:-Math.PI/2, spd:1.4,cone:Math.PI/2.5,range:155,osc:false}
+    ]
+  }
+];
+
+
+// 全壁（外周＋内壁）を返すヘルパー
+function getAllWalls(data) {
+  return [
+    {x:0,    y:0,    w:GW,   h:25},   // 上
+    {x:0,    y:GH-25,w:GW,   h:25},   // 下
+    {x:0,    y:0,    w:25,   h:GH},   // 左
+    {x:GW-25,y:0,    w:25,   h:GH},   // 右
+    ...(data.walls || [])
+  ];
+}
+
+// 点(x,y)が壁の中にあるか（中心点のみ・境界は有効とする）
+// slideMove が PUSH=2px で外側に押し返すため、壁面の2px外は確実に有効パスになる
+function inWall(x, y) {
+  const ws = getAllWalls(getLevelData(level));
+  return ws.some(w => x > w.x && x < w.x+w.w && y > w.y && y < w.y+w.h);
+}
+
+// 線分(ax,ay)-(bx,by)が矩形wと交差するか
+function segmentCrossesWall(ax,ay,bx,by,w) {
+  // Liang-Barsky clipping
+  const dx=bx-ax, dy=by-ay;
+  let tMin=0, tMax=1;
+  const tests=[[-dx,ax-w.x],[dx,w.x+w.w-ax],[-dy,ay-w.y],[dy,w.y+w.h-ay]];
+  for(const[p,q] of tests){
+    if(p===0){if(q<0)return false;}
+    else{const t=q/p; if(p<0){if(t>tMax)return false;if(t>tMin)tMin=t;}
+      else{if(t<tMin)return false;if(t<tMax)tMax=t;}}
+  }
+  return tMin<=tMax;
+}
+
+// パスが壁を通過するインデックスのセットを返す（デバッグ用・現在はslideで防止）
+function wallCrossingIndices() {
+  if (path.length < 2) return new Set();
+  const ws  = getAllWalls(getLevelData(level));
+  const bad = new Set();
+  for (let i=1; i<path.length; i++) {
+    const a=path[i-1], b=path[i];
+    if (ws.some(w => segmentCrossesWall(a.x,a.y,b.x,b.y,w))) bad.add(i);
+  }
+  return bad;
+}
+
+// ── 壁スナップ＆スライド ──────────────────────────────────────
+// 線分 (ax,ay)→(bx,by) が壁エッジを横切る最初の t (0〜1) を返す
+// 返値: {t, nx, ny}（壁外向き法線）または null
+//
+// ★バグ修正ポイント★
+// 旧実装は「始点が壁内なら無視」という条件を使っていたが、
+// slideMove のプッシュ方向が逆（壁内に押し込む）→始点が壁内に入る→スキップ→
+// 次の衝突が検出されないという連鎖バグが発生していた。
+// 修正: EPS判定を廃止し「移動方向が壁へ向いているエッジのみ検出」に変更。
+function firstWallHit(ax, ay, bx, by) {
+  const ws = getAllWalls(getLevelData(level));
+  const rx = bx-ax, ry = by-ay;
+  let tBest = 1, result = null;
+
+  ws.forEach(w => {
+    const edges = [
+      {p1x:w.x,    p1y:w.y,    p2x:w.x+w.w,p2y:w.y,    nx:0, ny:-1}, // 上辺
+      {p1x:w.x,    p1y:w.y+w.h,p2x:w.x+w.w,p2y:w.y+w.h,nx:0, ny:1 }, // 下辺
+      {p1x:w.x,    p1y:w.y,    p2x:w.x,    p2y:w.y+w.h,nx:-1,ny:0 }, // 左辺
+      {p1x:w.x+w.w,p1y:w.y,    p2x:w.x+w.w,p2y:w.y+w.h,nx:1, ny:0 }, // 右辺
+    ];
+
+    edges.forEach(e => {
+      // ★修正①: 移動ベクトルが外向き法線と逆方向のエッジのみ（外→内への進入のみ）
+      // movDot < 0 ⟺ 壁に向かって近づいている
+      const movDot = rx*e.nx + ry*e.ny;
+      if (movDot >= 0) return;
+
+      const sx=e.p2x-e.p1x, sy=e.p2y-e.p1y;
+      const d = rx*sy - ry*sx;
+      if (Math.abs(d) < 1e-9) return; // 平行
+      const dx2=e.p1x-ax, dy2=e.p1y-ay;
+      const t1=(dx2*sy-dy2*sx)/d; // 移動線分上のパラメータ
+      const t2=(dx2*ry-dy2*rx)/d; // 壁エッジ上のパラメータ
+      if (t1 >= 0 && t1 < tBest && t2 >= 0 && t2 <= 1) {
+        tBest = t1;
+        result = {t: t1, nx: e.nx, ny: e.ny};
+      }
+    });
+  });
+
+  return result;
+}
+
+// 壁エッジに近い場合に点をスナップ（壁に沿って直線を引きやすくする）
+const SNAP_W = 22; // スナップ距離（論理ピクセル）
+function snapToWalls(lx, ly) {
+  const ws = getAllWalls(getLevelData(level));
+  let bestD = SNAP_W, sx = lx, sy = ly;
+
+  ws.forEach(w => {
+    // 上辺 y=w.y（x が壁の横幅内にある場合）
+    if (lx >= w.x && lx <= w.x+w.w) {
+      const d = Math.abs(ly - w.y);
+      if (d < bestD) { bestD=d; sx=lx; sy=w.y; }
+    }
+    // 下辺 y=w.y+w.h
+    if (lx >= w.x && lx <= w.x+w.w) {
+      const d = Math.abs(ly - (w.y+w.h));
+      if (d < bestD) { bestD=d; sx=lx; sy=w.y+w.h; }
+    }
+    // 左辺 x=w.x
+    if (ly >= w.y && ly <= w.y+w.h) {
+      const d = Math.abs(lx - w.x);
+      if (d < bestD) { bestD=d; sx=w.x; sy=ly; }
+    }
+    // 右辺 x=w.x+w.w
+    if (ly >= w.y && ly <= w.y+w.h) {
+      const d = Math.abs(lx - (w.x+w.w));
+      if (d < bestD) { bestD=d; sx=w.x+w.w; sy=ly; }
+    }
+  });
+
+  return { lx: sx, ly: sy };
+}
+
+// (ax,ay)→(bx,by) の移動を壁でブロック＋スライドさせた到達点を返す
+function slideMove(ax, ay, bx, by) {
+  let x=ax, y=ay, dx=bx-ax, dy=by-ay;
+  const PUSH = 2; // 壁から2px押し返す（inWallの中心点判定で有効と認識させる）
+
+  for (let iter = 0; iter < 4; iter++) {
+    if (dx*dx + dy*dy < 0.01) break;
+    const hit = firstWallHit(x, y, x+dx, y+dy);
+    if (!hit) { x+=dx; y+=dy; break; }
+
+    // ★修正②: 衝突点まで移動し、外向き法線方向（壁の外側）へ押し返す
+    // 旧: - hit.nx*PUSH → 内向きに押し込んでいた（バグ）
+    // 正: + hit.nx*PUSH → 外向き法線方向に押し返す
+    x += dx*hit.t + hit.nx*PUSH;
+    y += dy*hit.t + hit.ny*PUSH;
+
+    // 残り移動量を壁面にスライド（法線成分を除去）
+    const rx=dx*(1-hit.t), ry=dy*(1-hit.t);
+    const dot = rx*hit.nx + ry*hit.ny;
+    dx = rx - dot*hit.nx;
+    dy = ry - dot*hit.ny;
+  }
+
+  return { x, y };
+}
+
+function genLevel(lvl) {
+  // Lv.11以降: 壁パターンをパラメータ化して自動生成
+  const seed = lvl * 137;
+  const rng  = i => { let v=Math.sin(seed+i)*43758.5453; return v-Math.floor(v); };
+  const gSpd  = Math.min(70 + (lvl-10)*5, 150);
+  const gRad  = Math.min(72 + (lvl-10),    95);
+  const cSpd  = Math.min(1.0 + (lvl-10)*.1, 2.5);
+  const divN  = Math.min(3 + Math.floor((lvl-10)/3), 6); // 仕切り枚数
+  const walls = [], guards = [], cameras = [];
+  // 仕切りをジグザグに追加
+  const gap   = Math.floor(GH / (divN+1));
+  for (let i=0; i<divN; i++) {
+    const wy   = gap*(i+1) - 27;
+    const gapR = rng(i*7) < .5;  // true=右隙間, false=左隙間
+    const ww   = 260 + Math.floor(rng(i*7+1)*40);
+    if (gapR) walls.push({x:25,    y:wy, w:ww,    h:55});
+    else       walls.push({x:GW-25-ww,y:wy,w:ww, h:55});
+    // 警備員を各区画に配置
+    const gy   = wy - gap/2 + 27;
+    const gx   = gapR ? 60 + rng(i*7+2)*220 : 240 + rng(i*7+3)*220;
+    const ox   = 50 + rng(i*7+4)*80;
+    guards.push({x:gx,y:gy,spd:gSpd,rad:gRad,wp:[{x:gx-ox,y:gy},{x:gx+ox,y:gy}]});
+  }
+  // カメラを1〜3台追加
+  const cN = Math.min(1 + Math.floor((lvl-10)/4), 3);
+  for (let i=0; i<cN; i++) {
+    cameras.push({x:80+rng(i*5+20)*360,y:120+rng(i*5+21)*480,
+      a:rng(i*5+22)*Math.PI*2,spd:cSpd,cone:Math.PI/3,range:155,osc:rng(i*5+23)<.5,
+      minA:rng(i*5+24)*Math.PI,maxA:rng(i*5+25)*Math.PI+Math.PI});
+  }
+  return {start:{x:80,y:88},goal:{x:440,y:632},walls,guards,cameras};
+}
+
+function getLevelData(idx) {
+  return idx < LEVELS.length ? LEVELS[idx] : genLevel(idx+1);
+}
+
+// ══ GAME STATE ══
+let gameState = 'title'; // title|draw|run|over|clear|name
+let level = 0;
+let score = 0;
+let levelScore = 0;
+let runStartTime = 0;
+
+// Drawn path
+let path = [];        // logical [{x,y}]
+let isDrawing = false;
+let pathStarted = false;
+
+// Runtime
+let charDist = 0;
+let cumDists  = [];
+let charPos   = {x:0,y:0};
+let caughtBy  = null; // 'guard'|'camera'
+let cleared   = false;
+
+// Enemies
+let guards  = [];
+let cameras = [];
+
+// Effects
+let particles = [];
+let shakeTime = 0;
+let flashAlpha = 0;
+let flashColor = '#ff0000';
+
+// animation
+let animId  = null;
+let lastTs  = 0;
+
+// ══ PATH UTILS ══
+function buildCumDists() {
+  cumDists = [0];
+  for (let i=1; i<path.length; i++) {
+    const d = Math.hypot(path[i].x-path[i-1].x, path[i].y-path[i-1].y);
+    cumDists.push(cumDists[i-1]+d);
+  }
+}
+function pathLength() { return cumDists.length ? cumDists[cumDists.length-1] : 0; }
+function posAtDist(dist) {
+  if (!path.length) return {x:0,y:0};
+  if (dist <= 0) return {...path[0]};
+  const total = cumDists[cumDists.length-1];
+  if (dist >= total) return {...path[path.length-1]};
+  let lo=0, hi=path.length-1;
+  while (lo+1<hi) { const m=(lo+hi)>>1; cumDists[m]<=dist?lo=m:hi=m; }
+  const t = (dist-cumDists[lo])/(cumDists[hi]-cumDists[lo]);
+  return {x:path[lo].x + t*(path[hi].x-path[lo].x), y:path[lo].y + t*(path[hi].y-path[lo].y)};
+}
+
+// ══ LEVEL INIT ══
+function loadLevel() {
+  const data = getLevelData(level);
+
+  // Reset guards
+  guards = data.guards.map(g => ({
+    ...g,
+    cx: g.wp[0].x, cy: g.wp[0].y,
+    wpIdx: 0, dir: 1, t: 0,
+    // alert state
+    alert: false
+  }));
+
+  // Reset cameras
+  cameras = data.cameras.map(c => ({...c, ca: c.a}));
+
+  path = []; cumDists = []; charDist = 0;
+  charPos = {...data.start};
+  caughtBy = null; cleared = false;
+  particles = []; shakeTime = 0; flashAlpha = 0;
+  isDrawing = false; pathStarted = false;
+
+  setHint('スタート🔵からゴール🟡までルートを指で描いてください');
+  updateHUD();
+  document.getElementById('btn-run').disabled = true;
+}
+
+function updateHUD() {
+  document.getElementById('h-level').textContent = level+1;
+  document.getElementById('h-score').textContent = score.toLocaleString();
+}
+
+function setHint(msg) {
+  document.getElementById('hint').textContent = msg;
+}
+
+// ══ DRAWING HANDLERS ══
+function getCanvasPoint(e) {
+  const r = cvs.getBoundingClientRect();
+  const cx = (e.clientX??e.touches[0].clientX) - r.left;
+  const cy = (e.clientY??e.touches[0].clientY) - r.top;
+  return { lx: tlx(cx), ly: tly(cy) };
+}
+
+function onDrawStart(e) {
+  if (gameState !== 'draw') return;
+  const {lx,ly} = getCanvasPoint(e);
+  const data = getLevelData(level);
+  const ds = Math.hypot(lx-data.start.x, ly-data.start.y);
+  if (ds > SNAP_R) {
+    setHint('🔵 スタートから描き始めてください！');
+    return;
+  }
+  isDrawing = true; pathStarted = true;
+  path = [{x:lx,y:ly}];
+  cumDists = [0];
+  document.getElementById('btn-run').disabled = true;
+  setHint('ゴール🟡まで描き続けてください');
+}
+
+function onDrawMove(e) {
+  if (!isDrawing || gameState !== 'draw') return;
+  let {lx, ly} = getCanvasPoint(e);
+
+  // 1) 壁エッジにスナップ（壁に沿った直線が引きやすくなる）
+  const snapped = snapToWalls(lx, ly);
+  lx = snapped.lx; ly = snapped.ly;
+
+  // 2) フィールド外へはみ出さないようクランプ
+  lx = Math.max(26, Math.min(GW-26, lx));
+  ly = Math.max(26, Math.min(GH-26, ly));
+
+  const last = path[path.length - 1];
+  if (Math.hypot(lx - last.x, ly - last.y) > 3) {
+    // 3) 壁ブロック＋スライド：壁をすり抜けず、壁面に沿って滑る
+    const moved = slideMove(last.x, last.y, lx, ly);
+
+    path.push({x: moved.x, y: moved.y});
+    cumDists.push(cumDists[cumDists.length-1] +
+      Math.hypot(moved.x - last.x, moved.y - last.y));
+  }
+  render();
+}
+
+function onDrawEnd(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  if (path.length < 10) { path=[]; cumDists=[]; setHint('もっと長く描いてください'); return; }
+  const data = getLevelData(level);
+  const last = path[path.length-1];
+  const dg = Math.hypot(last.x-data.goal.x, last.y-data.goal.y);
+  if (dg > GOAL_R * 2.5) {
+    setHint('🟡 ゴールに近づけてください。RUN! で試すこともできます。');
+  } else {
+    setHint('✅ ルート完成！RUN! でキャラクターを動かそう');
+  }
+  document.getElementById('btn-run').disabled = false;
+  render();
+}
+
+// ══ GAME LOOP ══
+function startRun() {
+  if (gameState !== 'draw' || path.length < 5) return;
+  buildCumDists();
+  const data = getLevelData(level);
+  charPos = {...data.start};
+  charDist = 0;
+  gameState = 'run';
+  caughtBy = null; cleared = false;
+  particles = [];
+  runStartTime = performance.now();
+  setHint('');
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-clear').disabled = true;
+  lastTs = 0;
+  if (animId) cancelAnimationFrame(animId);
+  animId = requestAnimationFrame(loop);
+}
+
+function loop(ts) {
+  const dt = lastTs ? Math.min((ts-lastTs)/1000, 0.05) : 0.016;
+  lastTs = ts;
+
+  update(dt);
+  render();
+
+  if (gameState === 'run') {
+    animId = requestAnimationFrame(loop);
+  }
+}
+
+function update(dt) {
+  if (gameState !== 'run') return;
+
+  // Move character along path
+  charDist += CHAR_SPD * dt;
+  const newPos = posAtDist(charDist);
+
+  // 壁衝突チェック
+  if (inWall(newPos.x, newPos.y)) {
+    gameState = 'draw';
+    document.getElementById('btn-run').disabled  = false;
+    document.getElementById('btn-clear').disabled = false;
+    setHint('🧱 壁にぶつかりました！壁を避けてルートを描き直してください');
+    render();
+    return;
+  }
+  charPos = newPos;
+
+  // Update guards
+  guards.forEach(g => {
+    const wp0 = g.wp[g.wpIdx];
+    const wp1 = g.wp[(g.wpIdx+1)%g.wp.length];
+    const dx = wp1.x-wp0.x, dy = wp1.y-wp0.y;
+    const segLen = Math.hypot(dx,dy)||1;
+    g.t += g.spd/segLen * dt * g.dir;
+    if (g.t>=1) { g.t=1; g.dir=-1; }
+    if (g.t<=0) { g.t=0; g.dir=1; if (g.wpIdx===0) g.wpIdx=g.wp.length-1; else g.wpIdx=0; }
+    g.cx = wp0.x + g.t*dx;
+    g.cy = wp0.y + g.t*dy;
+    // alert glow
+    const d = Math.hypot(charPos.x-g.cx, charPos.y-g.cy);
+    g.alert = d < g.rad * 1.5 && d > g.rad;
+  });
+
+  // Update cameras
+  cameras.forEach(c => {
+    if (c.osc) {
+      if (!c._cdir) c._cdir = 1;
+      c.ca += c.spd * dt * c._cdir;
+      if (c.ca > c.maxA) { c.ca = c.maxA; c._cdir = -1; }
+      if (c.ca < c.minA) { c.ca = c.minA; c._cdir  =  1; }
+    } else {
+      c.ca += c.spd * dt;
+    }
+  });
+
+  // Update effects
+  if (shakeTime > 0) shakeTime -= dt;
+  if (flashAlpha > 0) flashAlpha -= dt * 1.5;
+  particles = particles.filter(p => { p.life -= dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=80*dt; return p.life>0; });
+
+  // Collision detection
+  if (!caughtBy) {
+    guards.forEach(g => {
+      if (Math.hypot(charPos.x-g.cx, charPos.y-g.cy) < g.rad) caughtBy='guard';
+    });
+    cameras.forEach(c => {
+      const dist = Math.hypot(charPos.x-c.x, charPos.y-c.y);
+      if (dist < c.range) {
+        const ang = Math.atan2(charPos.y-c.y, charPos.x-c.x);
+        let diff = ang - c.ca; while(diff>Math.PI)diff-=2*Math.PI; while(diff<-Math.PI)diff+=2*Math.PI;
+        if (Math.abs(diff) <= c.cone) caughtBy='camera';
+      }
+    });
+  }
+
+  // Reached goal?
+  const data = getLevelData(level);
+  if (!caughtBy && Math.hypot(charPos.x-data.goal.x, charPos.y-data.goal.y) < GOAL_R) {
+    cleared = true;
+  }
+
+  // End conditions
+  if (caughtBy) {
+    shakeTime = 0.5; flashAlpha = 0.7; flashColor = '#ff3333';
+    spawnParticles(charPos.x, charPos.y, '#ff4444', 20);
+    gameState = 'over';
+    document.getElementById('btn-clear').disabled = false;
+    setTimeout(showGameOver, 600);
+    return;
+  }
+  if (cleared) {
+    flashAlpha = 0.5; flashColor = '#3fb950';
+    spawnParticles(data.goal.x, data.goal.y, '#ffd700', 30);
+    const elapsed = (performance.now() - runStartTime) / 1000;
+    const bonus = Math.max(0, Math.floor(500 - elapsed * 30));
+    levelScore = 1000 + bonus;
+    score += levelScore;
+    gameState = 'clear';
+    document.getElementById('btn-clear').disabled = false;
+    setTimeout(showClear, 700);
+  }
+
+  // Path ended without reaching goal
+  if (charDist >= pathLength() && !cleared && !caughtBy) {
+    gameState = 'draw';
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('btn-clear').disabled = false;
+    setHint('❌ ゴールまで届きませんでした。ルートを描き直してください');
+    render();
+  }
+}
+
+function spawnParticles(x, y, color, n) {
+  for (let i=0; i<n; i++) {
+    const ang = Math.random()*Math.PI*2;
+    const spd = 80 + Math.random()*160;
+    particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-60,color,life:0.6+Math.random()*0.4,r:2+Math.random()*4});
+  }
+}
+
+// ══ RENDER ══
+function render() {
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+
+  const sk = shakeTime>0 ? (Math.sin(shakeTime*60)*shakeTime*10) : 0;
+  ctx.save();
+  if (sk) ctx.translate(sk*sx, sk*sy);
+  ctx.translate(offX, offY);
+  ctx.scale(sx, sy);
+
+  drawBackground();
+  drawPath();
+
+  // Draw enemies
+  cameras.forEach(drawCamera);
+  guards.forEach(drawGuard);
+
+  drawStartGoal();
+  drawCharacter();
+  drawParticles();
+
+  ctx.restore();
+
+  // Screen flash
+  if (flashAlpha > 0) {
+    ctx.save();
+    ctx.fillStyle = flashColor;
+    ctx.globalAlpha = flashAlpha;
+    ctx.fillRect(0,0,cvs.width,cvs.height);
+    ctx.restore();
+  }
+}
+
+function drawBackground() {
+  const data = getLevelData(level);
+  const walls = getAllWalls(data);
+
+  // ── 通路（床）──
+  ctx.fillStyle = '#1c2b3a';
+  ctx.fillRect(0, 0, GW, GH);
+
+  // 床のグリッド
+  ctx.strokeStyle = 'rgba(255,255,255,.035)';
+  ctx.lineWidth = 1;
+  for (let x=0; x<=GW; x+=32) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,GH); ctx.stroke(); }
+  for (let y=0; y<=GH; y+=32) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(GW,y); ctx.stroke(); }
+
+  // ── 壁ブロック ──
+  walls.forEach(w => {
+    // 壁本体（暗色）
+    ctx.fillStyle = '#0d141e';
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    // 上辺ハイライト（立体感）
+    ctx.fillStyle = 'rgba(100,160,220,.18)';
+    ctx.fillRect(w.x, w.y, w.w, 3);
+    // 右辺シャドウ
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    ctx.fillRect(w.x+w.w-3, w.y, 3, w.h);
+    // 壁の枠線
+    ctx.strokeStyle = '#1e3148';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(w.x+.5, w.y+.5, w.w-1, w.h-1);
+  });
+
+  // 壁交差は slideMove で防止済みのため交差ハイライト不要
+
+  // ── 凡例（描画フェーズのみ） ──
+  if (gameState === 'draw') {
+    ctx.save();
+    ctx.font = '10px sans-serif'; ctx.textBaseline = 'middle';
+    const items = [
+      {col:'#0d141e',label:'■ 壁（通り抜け不可）',    y:GH-44},
+      {col:'#ff6060',label:'● 警備員 (A↔B巡回)',      y:GH-28},
+      {col:'#e3b341',label:'● 監視カメラ (扇形が視野)',y:GH-12},
+    ];
+    items.forEach(it => {
+      ctx.fillStyle = it.col;
+      ctx.beginPath(); ctx.arc(10, it.y, 5, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#445566'; ctx.lineWidth=.5; ctx.stroke();
+      ctx.fillStyle = '#99aabb'; ctx.fillText(it.label, 20, it.y);
+    });
+    ctx.restore();
+  }
+}
+
+function drawPath() {
+  if (path.length < 2) return;
+  // Shadow/glow
+  ctx.save();
+  ctx.lineWidth = 6; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle = 'rgba(63,185,80,.25)';
+  drawPolyline();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = gameState==='run' ? '#3fb950' : 'rgba(88,200,120,.8)';
+  ctx.shadowColor = '#3fb950'; ctx.shadowBlur = 8;
+  drawPolyline();
+  ctx.restore();
+
+  // Traversed portion (bright)
+  if (gameState==='run' && charDist>0) {
+    ctx.save();
+    ctx.lineWidth = 3; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle = '#ffffff';
+    ctx.shadowColor = '#aaffcc'; ctx.shadowBlur = 12;
+    ctx.beginPath();
+    let cum=0;
+    ctx.moveTo(path[0].x, path[0].y);
+    for (let i=1; i<path.length; i++) {
+      const d = Math.hypot(path[i].x-path[i-1].x, path[i].y-path[i-1].y);
+      if (cum+d >= charDist) {
+        const t = (charDist-cum)/d;
+        ctx.lineTo(path[i-1].x+t*(path[i].x-path[i-1].x), path[i-1].y+t*(path[i].y-path[i-1].y));
+        break;
+      }
+      ctx.lineTo(path[i].x, path[i].y);
+      cum+=d;
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawPolyline() {
+  ctx.beginPath();
+  ctx.moveTo(path[0].x, path[0].y);
+  path.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+}
+
+function drawGuard(g) {
+  const A = g.wp[0], B = g.wp[1];
+
+  // ── 巡回ルート表示（一番下のレイヤー）──
+  ctx.save();
+
+  // A→B の破線ルート
+  ctx.strokeStyle = 'rgba(255,140,80,.55)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 7]);
+  ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 経路の中点に往復矢印
+  const mx = (A.x+B.x)/2, my = (A.y+B.y)/2;
+  const pathAng = Math.atan2(B.y-A.y, B.x-A.x);
+  // A→B 方向矢印
+  const ar = 10;
+  [[pathAng, 12], [pathAng+Math.PI, 12]].forEach(([a, off]) => {
+    const ex = mx + Math.cos(a)*off, ey = my + Math.sin(a)*off;
+    ctx.strokeStyle = 'rgba(255,180,80,.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,180,80,.75)';
+    ctx.beginPath();
+    ctx.moveTo(ex + Math.cos(a)*ar,        ey + Math.sin(a)*ar);
+    ctx.lineTo(ex + Math.cos(a+2.5)*ar*.6, ey + Math.sin(a+2.5)*ar*.6);
+    ctx.lineTo(ex + Math.cos(a-2.5)*ar*.6, ey + Math.sin(a-2.5)*ar*.6);
+    ctx.closePath(); ctx.fill();
+  });
+
+  // 折返し地点 A（オレンジ●）
+  ctx.fillStyle = 'rgba(255,140,60,.9)';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(A.x, A.y, 6, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('A', A.x, A.y);
+
+  // 折返し地点 B（薄オレンジ●）
+  ctx.fillStyle = 'rgba(255,200,80,.9)';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(B.x, B.y, 6, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('B', B.x, B.y);
+
+  ctx.restore();
+
+  // ── 検知範囲（半透明赤円）──
+  const grd = ctx.createRadialGradient(g.cx,g.cy,0,g.cx,g.cy,g.rad);
+  grd.addColorStop(0,'rgba(255,60,60,.28)');
+  grd.addColorStop(1,'rgba(255,40,40,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.arc(g.cx,g.cy,g.rad,0,Math.PI*2); ctx.fill();
+
+  // 検知円の縁（警戒時は点滅）
+  ctx.save();
+  ctx.strokeStyle = g.alert ? 'rgba(255,160,50,.95)' : 'rgba(255,80,80,.6)';
+  ctx.lineWidth = g.alert ? 2 : 1.5;
+  ctx.setLineDash(g.alert?[3,3]:[6,5]);
+  ctx.beginPath(); ctx.arc(g.cx,g.cy,g.rad,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // ── 警備員の本体 ──
+  ctx.save();
+  ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 12;
+  ctx.fillStyle = g.alert ? '#ff9944' : '#ff6060';
+  ctx.beginPath(); ctx.arc(g.cx,g.cy,13,0,Math.PI*2); ctx.fill();
+
+  // 進行方向の矢印（警備員の体から出る）
+  const targetWp = g.dir > 0 ? B : A;
+  const moveAng = Math.atan2(targetWp.y-g.cy, targetWp.x-g.cx);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(g.cx + Math.cos(moveAng)*20, g.cy + Math.sin(moveAng)*20);
+  ctx.lineTo(g.cx + Math.cos(moveAng+2.3)*10, g.cy + Math.sin(moveAng+2.3)*10);
+  ctx.lineTo(g.cx + Math.cos(moveAng-2.3)*10, g.cy + Math.sin(moveAng-2.3)*10);
+  ctx.fill();
+
+  // 速度に応じた感嘆符 (spd>=85: 速い, 65-84: 普通, <65: 遅い)
+  const speedMark = g.spd >= 85 ? '!!' : g.spd >= 65 ? '!' : '';
+  if (speedMark) {
+    ctx.fillStyle = g.spd >= 85 ? '#ffcc00' : '#ffaa44';
+    ctx.font = `bold ${g.spd>=85?11:9}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText(speedMark, g.cx, g.cy - 16);
+  }
+  ctx.restore();
+}
+
+function drawCamera(c) {
+  // Vision cone
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,200,40,.18)';
+  ctx.strokeStyle = 'rgba(255,200,40,.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(c.x,c.y);
+  ctx.arc(c.x,c.y,c.range,c.ca-c.cone,c.ca+c.cone);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // Camera body
+  ctx.save();
+  ctx.fillStyle = '#e3b341';
+  ctx.shadowColor = '#ffcc44'; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(c.x,c.y,11,0,Math.PI*2); ctx.fill();
+  // Lens direction
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath();
+  ctx.arc(c.x + Math.cos(c.ca)*5, c.y + Math.sin(c.ca)*5, 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawStartGoal() {
+  const data = getLevelData(level);
+  const s = data.start, g = data.goal;
+
+  // Goal: pulsing gold
+  const pulse = 0.7 + 0.3*Math.sin(Date.now()/300);
+  ctx.save();
+  ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20*pulse;
+  ctx.fillStyle = `rgba(255,215,0,${0.3*pulse})`;
+  ctx.beginPath(); ctx.arc(g.x,g.y,GOAL_R,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('GOAL', g.x, g.y);
+  ctx.restore();
+
+  // Start: blue
+  ctx.save();
+  ctx.shadowColor = '#58a6ff'; ctx.shadowBlur = 12;
+  ctx.fillStyle = 'rgba(88,166,255,.3)';
+  ctx.beginPath(); ctx.arc(s.x,s.y,SNAP_R,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#58a6ff';
+  ctx.beginPath(); ctx.arc(s.x,s.y,16,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('START', s.x, s.y);
+  ctx.restore();
+}
+
+function drawCharacter() {
+  if (gameState==='draw'&&!path.length) return;
+  const pos = (gameState==='run'||gameState==='clear'||gameState==='over') ? charPos : (path.length?path[0]:null);
+  if (!pos) return;
+
+  ctx.save();
+  ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 16;
+  // Outer glow
+  ctx.fillStyle = 'rgba(0,255,200,.25)';
+  ctx.beginPath(); ctx.arc(pos.x,pos.y,CHAR_R*2,0,Math.PI*2); ctx.fill();
+  // Body
+  ctx.fillStyle = '#00ffcc';
+  ctx.beginPath(); ctx.arc(pos.x,pos.y,CHAR_R,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ══ SCREENS ══
+function showScreen(id) {
+  ['s-title','s-msg','s-name'].forEach(s => {
+    document.getElementById(s).classList.toggle('on', s===id);
+  });
+}
+
+function showGameOver() {
+  document.getElementById('msg-title-txt').textContent = '捕まった！';
+  document.getElementById('msg-title-txt').className = 'msg-title msg-over';
+  document.getElementById('msg-sub-txt').textContent =
+    caughtBy==='guard' ? '👮 警備員に発見されました' : '📹 監視カメラに捉えられました';
+  document.getElementById('msg-score-txt').textContent = `SCORE: ${score.toLocaleString()}`;
+  document.getElementById('msg-btns').innerHTML =
+    `<button class="btn-screen btn-primary" id="msg-retry">もう一度</button>
+     <button class="btn-screen btn-ghost" id="msg-home">ホームへ</button>`;
+  renderRankList('rank-list', score);
+  showScreen('s-msg');
+  document.getElementById('msg-retry').onclick = () => {
+    gameState = 'draw';
+    loadLevel();          // path・flashAlpha・particles などをすべてリセット
+    showScreen(null);
+    render();             // 赤フラッシュを消してクリーンな画面を即描画
+    requestAnimationFrame(function dl(){ if(gameState==='draw'){render();requestAnimationFrame(dl);} });
+  };
+  document.getElementById('msg-home').onclick = () => { endSession(); };
+}
+
+function showClear() {
+  document.getElementById('msg-title-txt').textContent = 'LEVEL CLEAR!';
+  document.getElementById('msg-title-txt').className = 'msg-title msg-clear';
+  document.getElementById('msg-sub-txt').textContent = `Level ${level+1} クリア！  ＋${levelScore.toLocaleString()}pts`;
+  document.getElementById('msg-score-txt').textContent = `TOTAL: ${score.toLocaleString()}`;
+  document.getElementById('msg-btns').innerHTML =
+    `<button class="btn-screen btn-primary" id="msg-next">次のレベルへ ▶</button>
+     <button class="btn-screen btn-ghost" id="msg-quit">終了</button>`;
+  renderRankList('rank-list', score);
+  showScreen('s-msg');
+  document.getElementById('msg-next').onclick = () => {
+    level++; gameState='draw'; showScreen(null); loadLevel();
+    requestAnimationFrame(function dl(){ if(gameState==='draw'){render();requestAnimationFrame(dl);} });
+  };
+  document.getElementById('msg-quit').onclick = () => { endSession(); };
+}
+
+function showTitle() {
+  gameState = 'title';
+  document.getElementById('hud').style.display  = 'none';
+  document.getElementById('hint').style.display = 'none';
+  const ranks = loadRanks();
+  document.getElementById('title-best-name').textContent  = ranks[0]?.name  ?? '---';
+  document.getElementById('title-best-score').textContent = (ranks[0]?.score??0).toLocaleString();
+  showScreen('s-title');
+}
+
+function startGame() {
+  level = 0; score = 0;
+  gameState = 'draw';
+  document.getElementById('hud').style.display  = 'flex';
+  document.getElementById('hint').style.display = 'block';
+  document.getElementById('btn-clear').disabled = false;
+  showScreen(null);
+  resize();
+  loadLevel();
+  render();
+}
+
+function showNameInput() {
+  document.getElementById('ni-score-txt').textContent = score.toLocaleString();
+  document.getElementById('ni-input').value = '';
+  showScreen('s-name');
+  setTimeout(() => document.getElementById('ni-input').focus(), 100);
+}
+
+function finishNameInput(name) {
+  if (name !== null) addRank(name, score);
+  showTitle();
+}
+
+// ══ EVENTS ══
+// Drawing
+cvs.addEventListener('touchstart', e => { e.preventDefault(); onDrawStart(e); }, {passive:false});
+cvs.addEventListener('touchmove',  e => { e.preventDefault(); onDrawMove(e);  }, {passive:false});
+cvs.addEventListener('touchend',   e => { e.preventDefault(); onDrawEnd(e);   }, {passive:false});
+cvs.addEventListener('mousedown',  e => { onDrawStart(e); });
+cvs.addEventListener('mousemove',  e => { if(isDrawing) onDrawMove(e); });
+cvs.addEventListener('mouseup',    e => { onDrawEnd(e); });
+
+// Buttons
+document.getElementById('btn-title-start').onclick = startGame;
+document.getElementById('btn-run').onclick = startRun;
+document.getElementById('btn-clear').onclick = () => {
+  if (gameState !== 'draw') return;
+  path=[]; cumDists=[]; isDrawing=false; pathStarted=false;
+  document.getElementById('btn-run').disabled = true;
+  setHint('スタート🔵からゴール🟡までルートを指で描いてください');
+  render();
+};
+document.getElementById('btn-ni-save').onclick = () => {
+  finishNameInput(document.getElementById('ni-input').value);
+};
+document.getElementById('btn-ni-skip').onclick = () => finishNameInput(null);
+document.getElementById('ni-input').addEventListener('keydown', e => {
+  if (e.key==='Enter') finishNameInput(document.getElementById('ni-input').value);
+});
+
+// On game over / clear from title: check for score
+function endSession() {
+  if (isNewRank(score)) {
+    showNameInput();
+  } else {
+    showTitle();
+  }
+}
+
+// Render loop for animations on draw state
+function drawLoop() {
+  if (gameState==='draw') { render(); requestAnimationFrame(drawLoop); }
+}
+
+// ══ INIT ══
+resize();
+showTitle();
+
+// Animate goal pulse on title
+(function titleLoop() {
+  if (gameState==='title') requestAnimationFrame(titleLoop);
+})();
+
+// Start button
+document.getElementById('btn-title-start').onclick = () => {
+  startGame();
+  requestAnimationFrame(function dl() {
+    if (gameState==='draw') { render(); requestAnimationFrame(dl); }
+  });
+};
+</script>
+</body>
+</html>
