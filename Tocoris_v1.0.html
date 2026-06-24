@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TOCORIS v1.0</title>
+<style>
+/* ===== BASE ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:      #1a1a2e;
+  --panel:   #16213e;
+  --border:  #2a3a55;
+  --accent:  #a0c4ff;
+  --gold:    #ffd166;
+  --dim:     #4a5f72;
+  --text:    #ddeeff;
+  --red:     #ff6b6b;
+  --green:   #06d6a0;
+}
+
+html { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', Courier, monospace;
+  height: 100%;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+/* ===== SCREENS ===== */
+.screen { display: none; flex-direction: column; align-items: center; width: 100%; }
+.screen.on { display: flex; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 11px 28px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  letter-spacing: 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: rgba(160,196,255,0.12);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.btn-primary:hover, .btn-primary:active { background: rgba(160,196,255,0.28); }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--dim);
+}
+.btn-ghost:hover, .btn-ghost:active { background: rgba(255,255,255,0.08); color: #8899bb; }
+
+/* ===== START SCREEN ===== */
+#start-screen { gap: 18px; padding: 20px; }
+
+.logo {
+  font-size: 2.4rem;
+  letter-spacing: 10px;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(160,196,255,0.4);
+}
+.logo-sub {
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  color: var(--dim);
+  margin-top: -10px;
+}
+.start-btns { display: flex; gap: 14px; }
+
+/* ===== RANKING ===== */
+.rank-wrap { width: 260px; }
+.rank-head {
+  font-size: 0.66rem;
+  letter-spacing: 3px;
+  color: var(--dim);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-bottom: 6px;
+}
+.rank-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 2px;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.rank-no  { width: 22px; color: var(--dim); flex-shrink: 0; }
+.rank-no.g1 { color: var(--gold); }
+.rank-no.g2 { color: #bbb; }
+.rank-no.g3 { color: #cd7f32; }
+.rank-name  { flex: 1; padding: 0 8px; color: #bbc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-score { color: var(--accent); font-weight: bold; flex-shrink: 0; }
+.rank-row.me .rank-name,
+.rank-row.me .rank-score { color: var(--gold); }
+.rank-empty { text-align: center; color: var(--border); font-size: 0.74rem; padding: 10px 0; }
+
+/* ===== GAME SCREEN ===== */
+#game-screen { height: 100%; height: 100dvh; gap: 0; padding: 0; justify-content: flex-start; }
+
+/* Mobile top info bar (hidden on desktop) */
+#info-bar {
+  display: none;
+  width: 100%;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 5px 10px;
+  align-items: center;
+  justify-content: space-around;
+  flex-shrink: 0;
+}
+.ib { display: flex; flex-direction: column; align-items: center; }
+.ib-l { font-size: 0.56rem; letter-spacing: 1px; color: var(--dim); }
+.ib-v { font-size: 0.9rem; font-weight: bold; color: #fff; line-height: 1.2; }
+#ib-next { background: #0d0d1a; border-radius: 2px; display: block; }
+
+/* Main game area */
+#game-main { display: flex; gap: 14px; padding: 10px; align-items: flex-start; flex: 1; }
+
+#board-wrap { position: relative; flex-shrink: 0; }
+#board { display: block; border: 2px solid var(--border); background: #0d0d1a; box-shadow: 0 0 24px rgba(0,0,0,0.6); }
+
+/* Desktop side panel */
+#side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+.s-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; }
+.s-label { font-size: 0.64rem; letter-spacing: 2px; color: var(--dim); margin-bottom: 4px; }
+.s-value { font-size: 1.4rem; font-weight: bold; color: #fff; }
+#next-cvs { background: #0d0d1a; border-radius: 3px; display: block; }
+#pause-btn { width: 100%; }
+
+/* D-pad (hidden on desktop) */
+#dpad {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 12px;
+  width: 100%;
+  background: rgba(22,33,62,0.6);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.drow { display: flex; gap: 8px; align-items: center; justify-content: center; }
+.dbt {
+  display: flex; align-items: center; justify-content: center;
+  font-family: inherit;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: #ccd;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.08s, transform 0.06s;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 1.1rem;
+}
+.dbt:active { background: rgba(160,196,255,0.2); transform: scale(0.94); }
+.dbt-sq { width: 62px; height: 52px; }
+.dbt-wd { width: 110px; height: 46px; font-size: 0.78rem; letter-spacing: 1px; }
+.dbt-sm { width: 46px; height: 40px; font-size: 0.88rem; }
+
+/* ===== GAMEOVER SCREEN ===== */
+#gameover-screen {
+  gap: 14px;
+  padding: 24px 16px 32px;
+  overflow-y: auto;
+  max-height: 100%;
+  max-height: 100dvh;
+}
+.go-title { font-size: 1.8rem; letter-spacing: 5px; color: var(--red); text-shadow: 0 0 12px rgba(255,107,107,0.4); }
+.result-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 28px;
+  width: 240px;
+}
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 0.86rem; color: #8899aa; }
+.result-row b { color: var(--gold); font-size: 1.1rem; }
+
+#name-box {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid #446688;
+  border-radius: 8px;
+  padding: 16px 20px;
+  width: 290px;
+  text-align: center;
+}
+.nm-title { font-size: 0.9rem; color: var(--gold); }
+.nm-sub   { font-size: 0.75rem; color: #8899aa; }
+.nm-row   { display: flex; gap: 8px; margin-top: 4px; }
+#name-input {
+  background: #0d0d1a;
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 7px 10px;
+  border-radius: 5px;
+  width: 150px;
+  text-align: center;
+  outline: none;
+}
+#name-input:focus { border-color: var(--gold); }
+.skip-btn {
+  background: none; border: none;
+  color: var(--dim); font-family: inherit; font-size: 0.7rem;
+  cursor: pointer; text-decoration: underline; letter-spacing: 1px;
+}
+.skip-btn:hover { color: #8899bb; }
+
+/* ===== RULE MODAL ===== */
+#rule-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 400;
+  align-items: center; justify-content: center;
+  padding: 12px;
+}
+#rule-modal.on { display: flex; }
+.mbox {
+  background: var(--panel);
+  border: 1px solid #446688;
+  border-radius: 12px;
+  padding: 22px 26px;
+  max-width: 360px; width: 100%;
+  max-height: 88vh; max-height: 88dvh;
+  overflow-y: auto;
+  position: relative;
+}
+.mclose {
+  position: absolute; top: 10px; right: 14px;
+  background: none; border: none; color: var(--dim);
+  font-size: 1.2rem; cursor: pointer; line-height: 1;
+}
+.mclose:hover { color: #aaa; }
+.m-title { font-size: 1rem; letter-spacing: 4px; color: var(--accent); text-align: center; margin-bottom: 18px; }
+.rsec { margin-bottom: 16px; }
+.rh { font-size: 0.63rem; letter-spacing: 2px; color: var(--dim); margin-bottom: 6px; text-transform: uppercase; }
+.rul { padding-left: 1.2em; }
+.rul li, .rtxt { font-size: 0.76rem; color: #bbc; line-height: 1.9; }
+.rtbl { width: 100%; border-collapse: collapse; font-size: 0.74rem; margin-top: 4px; }
+.rtbl th { color: var(--dim); font-weight: normal; padding: 3px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+.rtbl td { padding: 4px 6px; color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.rtbl td.hl { color: var(--gold); }
+
+/* ===== MOBILE LAYOUT ===== */
+@media (max-width: 620px) {
+  body { align-items: flex-start; }
+  #game-screen { justify-content: flex-start; }
+  #info-bar   { display: flex; }
+  #side-panel { display: none; }
+  #dpad       { display: flex; }
+  #game-main  { padding: 6px; gap: 0; justify-content: center; flex: 1; align-items: flex-start; }
+
+  .logo { font-size: 1.9rem; letter-spacing: 7px; }
+  .start-btns { gap: 12px; }
+  .btn { padding: 11px 22px; }
+  .go-title { font-size: 1.5rem; }
+  .result-box { width: 220px; padding: 10px 20px; }
+  #name-box { width: 270px; }
+  .rank-wrap { width: 240px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== START ===================== -->
+<div id="start-screen" class="screen on">
+  <h1 class="logo">TOCORIS</h1>
+  <p class="logo-sub">v1.0</p>
+  <div class="rank-wrap" id="start-rank"></div>
+  <div class="start-btns">
+    <button class="btn btn-ghost" id="btn-rule">RULE</button>
+    <button class="btn btn-primary" id="btn-start">START</button>
+  </div>
+</div>
+
+<!-- ===================== GAME ===================== -->
+<div id="game-screen" class="screen">
+  <!-- Mobile top bar -->
+  <div id="info-bar">
+    <div class="ib"><span class="ib-l">SCORE</span><span class="ib-v" id="ib-score">0</span></div>
+    <div class="ib"><span class="ib-l">Lv</span><span class="ib-v" id="ib-level">1</span></div>
+    <div class="ib"><span class="ib-l">LINE</span><span class="ib-v" id="ib-lines">0</span></div>
+    <div class="ib"><span class="ib-l">NEXT</span><canvas id="ib-next" width="44" height="44"></canvas></div>
+  </div>
+
+  <!-- Canvas + desktop side -->
+  <div id="game-main">
+    <div id="board-wrap"><canvas id="board"></canvas></div>
+    <div id="side-panel">
+      <div class="s-panel"><div class="s-label">NEXT</div><canvas id="next-cvs" width="108" height="108"></canvas></div>
+      <div class="s-panel"><div class="s-label">SCORE</div><div class="s-value" id="sp-score">0</div></div>
+      <div class="s-panel"><div class="s-label">LEVEL</div><div class="s-value" id="sp-level">1</div></div>
+      <div class="s-panel"><div class="s-label">LINES</div><div class="s-value" id="sp-lines">0</div></div>
+      <button class="btn btn-ghost" id="pause-btn">PAUSE</button>
+    </div>
+  </div>
+
+  <!-- D-pad -->
+  <div id="dpad">
+    <div class="drow">
+      <button class="dbt dbt-wd" id="db-rotate">↑ 回転</button>
+      <button class="dbt dbt-wd" id="db-drop">DROP</button>
+      <button class="dbt dbt-sm" id="db-pause">⏸</button>
+    </div>
+    <div class="drow">
+      <button class="dbt dbt-sq" id="db-left">←</button>
+      <button class="dbt dbt-sq" id="db-down">↓</button>
+      <button class="dbt dbt-sq" id="db-right">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== GAMEOVER ===================== -->
+<div id="gameover-screen" class="screen">
+  <h2 class="go-title">GAME OVER</h2>
+  <div class="result-box">
+    <div class="result-row"><span>SCORE</span><b id="go-score">0</b></div>
+    <div class="result-row"><span>LINES</span><b id="go-lines">0</b></div>
+    <div class="result-row"><span>LEVEL</span><b id="go-level">1</b></div>
+  </div>
+  <div id="name-box">
+    <p class="nm-title">🏆 TOP 5 入賞！</p>
+    <p class="nm-sub">名前を入力してください</p>
+    <div class="nm-row">
+      <input id="name-input" type="text" maxlength="10" placeholder="NAME" autocomplete="off" enterkeyhint="done">
+      <button class="btn btn-primary" id="btn-reg">登録</button>
+    </div>
+    <button class="skip-btn" id="btn-skip">スキップ</button>
+  </div>
+  <div class="rank-wrap" id="go-rank"></div>
+  <button class="btn btn-ghost" id="btn-restart" style="margin-top:4px">RESTART</button>
+</div>
+
+<!-- ===================== RULE MODAL ===================== -->
+<div id="rule-modal">
+  <div class="mbox">
+    <button class="mclose" id="btn-rule-close">✕</button>
+    <h2 class="m-title">RULE</h2>
+
+    <div class="rsec">
+      <div class="rh">基本ルール</div>
+      <ul class="rul">
+        <li>上から落ちてくるブロック（ミノ）を積み上げる</li>
+        <li>横1列が全て埋まると消えてスコア加算</li>
+        <li>ブロックが画面上端まで積みあがるとゲームオーバー</li>
+      </ul>
+    </div>
+
+    <div class="rsec">
+      <div class="rh">スコア（レベル倍率あり）</div>
+      <table class="rtbl">
+        <tr><th>消去ライン数</th><th>スコア</th></tr>
+        <tr><td>1ライン</td><td class="hl">100 × Lv</td></tr>
+        <tr><td>2ライン</td><td class="hl">300 × Lv</td></tr>
+        <tr><td>3ライン</td><td class="hl">500 × Lv</td></tr>
+        <tr><td>4ライン（テトリス）</td><td class="hl">800 × Lv</td></tr>
+      </table>
+    </div>
+
+    <div class="rsec">
+      <div class="rh">レベルアップ</div>
+      <p class="rtxt">累計10ライン消去ごとに1レベルアップ。レベルが上がるほど落下速度が増す。</p>
+      <table class="rtbl">
+        <tr><th>Lv</th><th>累計ライン</th><th>落下間隔</th></tr>
+        <tr><td>1</td><td>0〜9</td><td>800ms</td></tr>
+        <tr><td>3</td><td>20〜29</td><td>660ms</td></tr>
+        <tr><td>5</td><td>40〜49</td><td>520ms</td></tr>
+        <tr><td>8</td><td>70〜79</td><td>310ms</td></tr>
+        <tr><td>11+</td><td>100〜</td><td class="hl">100ms（最速）</td></tr>
+      </table>
+      <p class="rtxt" style="margin-top:4px;font-size:0.68rem;color:#446">※ Lv12以降は速度変化なし</p>
+    </div>
+
+    <div class="rsec">
+      <div class="rh">操作</div>
+      <table class="rtbl">
+        <tr><th>キー / ボタン</th><th>動作</th></tr>
+        <tr><td>← → / ボタン</td><td>左右移動</td></tr>
+        <tr><td>↑ / 回転ボタン</td><td>回転（壁キック対応）</td></tr>
+        <tr><td>↓ / ↓ボタン</td><td>高速落下</td></tr>
+        <tr><td>Space / DROP</td><td>即落下</td></tr>
+        <tr><td>P</td><td>一時停止 / 再開</td></tr>
+      </table>
+      <p class="rtxt" style="margin-top:6px">📱 スマホ：タップで回転、左右スワイプで移動、下スワイプで即落下</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ===== CONSTANTS =====
+const COLS = 10, ROWS = 20;
+const SCORE_TBL = [0, 100, 300, 500, 800];
+const HS_KEY    = 'tocoris_v1_hs';
+const MAX_RANK  = 5;
+
+const SHAPES = [
+  { color: '#00cfcf', cells: [[0,1],[1,1],[2,1],[3,1]], w: 4 }, // I
+  { color: '#d4c800', cells: [[0,0],[1,0],[0,1],[1,1]], w: 2 }, // O
+  { color: '#aa00ff', cells: [[1,0],[0,1],[1,1],[2,1]], w: 3 }, // T
+  { color: '#00c844', cells: [[1,0],[2,0],[0,1],[1,1]], w: 3 }, // S
+  { color: '#e02020', cells: [[0,0],[1,0],[1,1],[2,1]], w: 3 }, // Z
+  { color: '#ff8800', cells: [[2,0],[0,1],[1,1],[2,1]], w: 3 }, // L
+  { color: '#2255ff', cells: [[0,0],[0,1],[1,1],[2,1]], w: 3 }, // J
+];
+
+// ===== DOM =====
+const $     = id => document.getElementById(id);
+const bCvs  = $('board'),    bCtx  = bCvs.getContext('2d');
+const nCvs  = $('next-cvs'), nCtx  = nCvs.getContext('2d');
+const inCvs = $('ib-next'),  inCtx = inCvs.getContext('2d');
+
+// ===== GAME STATE =====
+let CELL = 27;
+let board, cur, nxt, score, lines, level;
+let over, paused, dtimer, dint, lt, raf;
+
+// ===== CANVAS SIZING =====
+function calcCell() {
+  const mobile = window.innerWidth <= 620;
+  if (!mobile) return 27;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const infoH = 52;   // top info bar
+  const dpadH = 116;  // d-pad area
+  const pad   = 18;   // vertical breathing room
+  const hPad  = 12;   // horizontal padding
+
+  const byW = Math.floor((vw - hPad) / COLS);
+  const byH = Math.floor((vh - infoH - dpadH - pad) / ROWS);
+  return Math.max(18, Math.min(30, byW, byH));
+}
+
+function resizeCanvas() {
+  CELL = calcCell();
+  bCvs.width  = COLS * CELL;
+  bCvs.height = ROWS * CELL;
+}
+
+// ===== HIGHSCORES =====
+function loadHS() {
+  try { return JSON.parse(localStorage.getItem(HS_KEY)) || []; }
+  catch { return []; }
+}
+function saveHS(r) { localStorage.setItem(HS_KEY, JSON.stringify(r)); }
+function qualifies(s) {
+  const r = loadHS();
+  return r.length < MAX_RANK || s > r[r.length - 1].score;
+}
+function addHS(name, s, ln, lv) {
+  const r = loadHS();
+  r.push({ name: (name || 'NONAME').trim() || 'NONAME', score: s, lines: ln, level: lv });
+  r.sort((a, b) => b.score - a.score);
+  r.length = Math.min(r.length, MAX_RANK);
+  saveHS(r);
+  return r;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function renderHS(id, list, hlScore) {
+  const el = $(id);
+  el.innerHTML = '<div class="rank-head">BEST 5</div>';
+  if (!list.length) {
+    el.innerHTML += '<div class="rank-empty">まだ記録がありません</div>';
+    return;
+  }
+  list.forEach((e, i) => {
+    const me = hlScore !== undefined && e.score === hlScore;
+    const nc = ['g1','g2','g3'][i] || '';
+    el.innerHTML +=
+      `<div class="rank-row${me ? ' me' : ''}">` +
+      `<span class="rank-no ${nc}">${i+1}.</span>` +
+      `<span class="rank-name">${esc(e.name)}</span>` +
+      `<span class="rank-score">${e.score.toLocaleString()}</span>` +
+      `</div>`;
+  });
+}
+
+// ===== SCREEN =====
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+
+// ===== BOARD =====
+function newBoard() {
+  return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+}
+function randPiece() {
+  const s = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  return { color: s.color, cells: s.cells.map(c => [...c]),
+           x: Math.floor(COLS / 2) - Math.ceil(s.w / 2), y: 0 };
+}
+function rotateCells(cells) {
+  const my = Math.max(...cells.map(c => c[1]));
+  return cells.map(([x, y]) => [my - y, x]);
+}
+function normalize(cells) {
+  const mx = Math.min(...cells.map(c => c[0]));
+  const my = Math.min(...cells.map(c => c[1]));
+  return cells.map(([x, y]) => [x - mx, y - my]);
+}
+function ok(cells, ox, oy) {
+  return cells.every(([x, y]) => {
+    const nx = ox + x, ny = oy + y;
+    return nx >= 0 && nx < COLS && ny < ROWS && (ny < 0 || !board[ny][nx]);
+  });
+}
+function lock() {
+  cur.cells.forEach(([x, y]) => {
+    const ny = cur.y + y, nx = cur.x + x;
+    if (ny >= 0) board[ny][nx] = cur.color;
+  });
+  sweep();
+  cur = nxt; nxt = randPiece();
+  if (!ok(cur.cells, cur.x, cur.y)) endGame();
+}
+function sweep() {
+  let n = 0;
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (board[r].every(c => c !== null)) {
+      board.splice(r, 1);
+      board.unshift(Array(COLS).fill(null));
+      n++; r++;
+    }
+  }
+  if (n) {
+    lines += n;
+    score += SCORE_TBL[n] * level;
+    level  = Math.floor(lines / 10) + 1;
+    dint   = Math.max(100, 800 - (level - 1) * 70);
+    refreshUI();
+  }
+}
+
+// ===== MOVES =====
+function left()  { if (!paused && ok(cur.cells, cur.x - 1, cur.y)) cur.x--; }
+function right() { if (!paused && ok(cur.cells, cur.x + 1, cur.y)) cur.x++; }
+function down()  {
+  if (paused) return false;
+  if (ok(cur.cells, cur.x, cur.y + 1)) { cur.y++; return true; }
+  lock(); return false;
+}
+function rotate() {
+  if (paused) return;
+  const r = normalize(rotateCells(cur.cells));
+  for (const k of [0, -1, 1, -2, 2]) {
+    if (ok(r, cur.x + k, cur.y)) { cur.cells = r; cur.x += k; return; }
+  }
+}
+function drop() {
+  if (paused) return;
+  while (ok(cur.cells, cur.x, cur.y + 1)) cur.y++;
+  lock();
+}
+function ghostY() {
+  let gy = cur.y;
+  while (ok(cur.cells, cur.x, gy + 1)) gy++;
+  return gy;
+}
+
+// ===== DRAW =====
+function cell(color, cx, cy, alpha, ctx2, cs) {
+  const c = ctx2 || bCtx, sz = cs || CELL;
+  const px = cx * sz, py = cy * sz;
+  c.globalAlpha = alpha ?? 1;
+  c.fillStyle = color;
+  c.fillRect(px + 1, py + 1, sz - 2, sz - 2);
+  c.fillStyle = 'rgba(255,255,255,0.17)';
+  c.fillRect(px + 1, py + 1, sz - 2, 5);
+  c.fillStyle = 'rgba(0,0,0,0.22)';
+  c.fillRect(px + 1, py + sz - 5, sz - 2, 4);
+  c.globalAlpha = 1;
+}
+function drawBoard() {
+  bCtx.clearRect(0, 0, bCvs.width, bCvs.height);
+  bCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+  bCtx.lineWidth = 1;
+  for (let x = 0; x <= COLS; x++) { bCtx.beginPath(); bCtx.moveTo(x*CELL,0); bCtx.lineTo(x*CELL,ROWS*CELL); bCtx.stroke(); }
+  for (let y = 0; y <= ROWS; y++) { bCtx.beginPath(); bCtx.moveTo(0,y*CELL); bCtx.lineTo(COLS*CELL,y*CELL); bCtx.stroke(); }
+
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (board[r][c]) cell(board[r][c], c, r);
+
+  if (cur) {
+    const gy = ghostY();
+    if (gy !== cur.y) cur.cells.forEach(([x, y]) => cell(cur.color, cur.x+x, gy+y, 0.14));
+    cur.cells.forEach(([x, y]) => cell(cur.color, cur.x+x, cur.y+y));
+  }
+  if (paused) {
+    bCtx.fillStyle = 'rgba(0,0,0,0.65)';
+    bCtx.fillRect(0, 0, bCvs.width, bCvs.height);
+    bCtx.fillStyle = '#a0c4ff';
+    bCtx.font = `bold ${Math.round(CELL*0.85)}px Courier New`;
+    bCtx.textAlign = 'center'; bCtx.textBaseline = 'middle';
+    bCtx.fillText('PAUSE', bCvs.width/2, bCvs.height/2);
+    bCtx.textBaseline = 'alphabetic';
+  }
+}
+function drawNext(cvs, ctx2) {
+  ctx2.clearRect(0, 0, cvs.width, cvs.height);
+  if (!nxt) return;
+  const cells = nxt.cells;
+  const x0 = Math.min(...cells.map(c => c[0])), y0 = Math.min(...cells.map(c => c[1]));
+  const x1 = Math.max(...cells.map(c => c[0])), y1 = Math.max(...cells.map(c => c[1]));
+  const cs = Math.floor(cvs.width / 4);
+  const ox = Math.floor((cvs.width  - (x1-x0+1)*cs) / 2);
+  const oy = Math.floor((cvs.height - (y1-y0+1)*cs) / 2);
+  cells.forEach(([x, y]) => {
+    const px = ox + (x-x0)*cs, py = oy + (y-y0)*cs;
+    ctx2.fillStyle = nxt.color;
+    ctx2.fillRect(px+1, py+1, cs-2, cs-2);
+    ctx2.fillStyle = 'rgba(255,255,255,0.17)';
+    ctx2.fillRect(px+1, py+1, cs-2, 4);
+  });
+}
+function draw() {
+  drawBoard();
+  drawNext(nCvs, nCtx);
+  drawNext(inCvs, inCtx);
+}
+
+// ===== UI =====
+function refreshUI() {
+  const fmt = n => n.toLocaleString();
+  [['sp-score','ib-score'], ['sp-level','ib-level'], ['sp-lines','ib-lines']].forEach(([a, b], i) => {
+    const v = [fmt(score), String(level), String(lines)][i];
+    const ea = $(a), eb = $(b);
+    if (ea) ea.textContent = v;
+    if (eb) eb.textContent = v;
+  });
+}
+function setPaused(val) {
+  paused = val;
+  $('pause-btn').textContent = paused ? 'RESUME' : 'PAUSE';
+}
+function togglePause() { if (!over) setPaused(!paused); }
+
+// ===== GAME FLOW =====
+function startGame() {
+  resizeCanvas();
+  board = newBoard();
+  score = 0; lines = 0; level = 1;
+  dint  = 800; dtimer = 0;
+  over  = false;
+  setPaused(false);
+  cur = randPiece(); nxt = randPiece();
+  refreshUI();
+  show('game-screen');
+  lt = null;
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(loop);
+}
+function loop(ts) {
+  if (over) return;
+  if (!lt) lt = ts;
+  const dt = ts - lt; lt = ts;
+  if (!paused) {
+    dtimer += dt;
+    if (dtimer >= dint) { down(); dtimer = 0; }
+  }
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+function endGame() {
+  over = true;
+  if (raf) cancelAnimationFrame(raf);
+  $('go-score').textContent = score.toLocaleString();
+  $('go-lines').textContent = lines;
+  $('go-level').textContent = level;
+  const q = qualifies(score);
+  $('name-box').style.display = q ? 'flex' : 'none';
+  if (q) { $('name-input').value = ''; setTimeout(() => $('name-input').focus(), 100); }
+  renderHS('go-rank', loadHS(), q ? undefined : score);
+  show('gameover-screen');
+}
+function register() {
+  const r = addHS($('name-input').value, score, lines, level);
+  renderHS('go-rank', r, score);
+  $('name-box').style.display = 'none';
+}
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', e => {
+  if (!$('game-screen').classList.contains('on')) return;
+  switch (e.key) {
+    case 'ArrowLeft':  e.preventDefault(); left();   break;
+    case 'ArrowRight': e.preventDefault(); right();  break;
+    case 'ArrowDown':  e.preventDefault(); if (!paused) { down(); dtimer = 0; } break;
+    case 'ArrowUp':    e.preventDefault(); rotate(); break;
+    case ' ':          e.preventDefault(); drop();   break;
+    case 'p': case 'P': togglePause(); break;
+  }
+});
+
+// ===== TOUCH CONTROLS =====
+// 方向ロック方式：最初の動きで横か縦かを確定し、それぞれ専用処理
+let tx0 = 0, ty0 = 0, tt0 = 0;
+let txPrev = 0, hAcc = 0, touchDir = null; // 'h' | 'v' | null
+
+bCvs.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  tx0 = txPrev = t.clientX;
+  ty0 = t.clientY;
+  tt0 = Date.now();
+  touchDir = null;
+  hAcc = 0;
+}, { passive: false });
+
+bCvs.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (over || paused) return;
+  const t = e.touches[0];
+  const totalDx = t.clientX - tx0;
+  const totalDy = t.clientY - ty0;
+
+  // 8px 動いた時点で方向を確定（一度決めたら変わらない）
+  if (!touchDir) {
+    if (Math.abs(totalDx) > 8 || Math.abs(totalDy) > 8) {
+      touchDir = Math.abs(totalDx) >= Math.abs(totalDy) ? 'h' : 'v';
+    }
+  }
+
+  if (touchDir === 'h') {
+    // 横：1セル分動くたびに1マス移動
+    hAcc += t.clientX - txPrev;
+    const step = Math.trunc(hAcc / CELL);
+    if (step !== 0) {
+      for (let i = 0; i < Math.abs(step); i++) step > 0 ? right() : left();
+      hAcc -= step * CELL;
+    }
+    txPrev = t.clientX;
+  }
+  // 縦方向は touchend で判定（意図しないドロップを防ぐ）
+}, { passive: false });
+
+bCvs.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (over || paused) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - tx0;
+  const dy = t.clientY - ty0;
+  const elapsed = Date.now() - tt0;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+
+  // タップ（ほぼ動かず短時間）→ 回転
+  if (adx < 12 && ady < 12 && elapsed < 220) { rotate(); return; }
+
+  // 下スワイプ → ハードドロップ
+  if ((touchDir === 'v' || !touchDir) && dy > 40 && ady > adx) { drop(); }
+}, { passive: false });
+
+// ===== D-PAD =====
+function dpad(id, fn, rep) {
+  const el = $(id);
+  if (!el) return;
+  let iv;
+  const go = e => { e.preventDefault(); fn(); if (rep) iv = setInterval(fn, 105); };
+  const stop = () => clearInterval(iv);
+  el.addEventListener('touchstart', go, { passive: false });
+  el.addEventListener('mousedown',  go);
+  ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev => el.addEventListener(ev, stop));
+}
+dpad('db-left',   left,   true);
+dpad('db-right',  right,  true);
+dpad('db-down',   () => { if (!paused) { down(); dtimer = 0; } }, true);
+dpad('db-rotate', rotate, false);
+dpad('db-drop',   drop,   false);
+$('db-pause').addEventListener('click', togglePause);
+
+// ===== BUTTON EVENTS =====
+$('btn-start').addEventListener('click', startGame);
+$('btn-restart').addEventListener('click', startGame);
+$('btn-reg').addEventListener('click', register);
+$('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
+$('btn-skip').addEventListener('click', () => { $('name-box').style.display = 'none'; });
+$('pause-btn').addEventListener('click', togglePause);
+
+// Rule modal
+const modal = $('rule-modal');
+$('btn-rule').addEventListener('click',       () => modal.classList.add('on'));
+$('btn-rule-close').addEventListener('click', () => modal.classList.remove('on'));
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('on'); });
+
+// ===== ORIENTATION CHANGE =====
+window.addEventListener('orientationchange', () => {
+  if ($('game-screen').classList.contains('on') && !over) {
+    setTimeout(resizeCanvas, 300);
+  }
+});
+
+// ===== INIT =====
+renderHS('start-rank', loadHS());
+</script>
+</body>
+</html>
