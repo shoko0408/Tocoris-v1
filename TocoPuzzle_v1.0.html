@@ -139,9 +139,12 @@ body{display:flex;align-items:center;justify-content:center;}
   text-align:center;outline:none;width:100%;}
 #nm-input:focus{border-color:var(--gold);}
 .nm-btns{display:flex;gap:8px;}
+.back-btn-top{position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;font-size:12px;font-weight:bold;padding:7px 14px;border-radius:20px;text-decoration:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.2);letter-spacing:0.5px;transition:background 0.15s;}
+.back-btn-top:hover,.back-btn-top:active{background:rgba(0,0,0,0.78);}
 </style>
 </head>
 <body>
+<a href="index.html" class="back-btn-top">← ゲームランド</a>
 
 <!-- ══════════════ HOME ══════════════ -->
 <div id="home" class="screen on">
