@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>アキオとパチョの謎解きトラベラー（世界史編）</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --washi:#fdf6e3; --brown-dark:#3d2c0e; --brown-mid:#7a5c2e;
+  --brown-light:#d4a96a; --brown-pale:#f5e6c8; --red-life:#e74c3c;
+  --gold:#c8860a; --green-ok:#27ae60; --blue-hint:#2980b9;
+}
+html,body { height:100%; font-family:'Hiragino Maru Gothic ProN','Hiragino Sans','BIZ UDPGothic','Meiryo',sans-serif; background:var(--washi); color:var(--brown-dark); overflow:hidden; }
+body::before { content:''; position:fixed; inset:0; background:radial-gradient(ellipse at 15% 15%,rgba(210,180,140,0.2) 0%,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(180,140,100,0.15) 0%,transparent 55%),repeating-linear-gradient(0deg,transparent,transparent 50px,rgba(160,120,80,0.025) 50px,rgba(160,120,80,0.025) 51px); pointer-events:none; z-index:0; }
+.screen { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; z-index:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.screen.active { display:flex; }
+#screen-opening { justify-content:center; padding:20px 16px; gap:16px; }
+.opening-badge { display:inline-block; background:linear-gradient(135deg,#8b4513,#c8860a); color:#fff8e7; font-size:11px; font-weight:bold; letter-spacing:2px; padding:4px 16px; border-radius:20px; margin-bottom:10px; }
+.opening-title { font-size:22px; font-weight:bold; color:var(--brown-dark); line-height:1.3; text-shadow:1px 1px 0 rgba(255,255,255,0.8); }
+.opening-sub { font-size:13px; color:var(--brown-mid); margin-top:6px; }
+.deco-line { width:100%; max-width:400px; height:2px; background:linear-gradient(to right,transparent,var(--brown-light) 20%,var(--gold) 50%,var(--brown-light) 80%,transparent); border-radius:1px; }
+.char-display { display:flex; justify-content:space-around; width:100%; max-width:360px; }
+.char-big { font-size:52px; filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.15)); animation:charFloat 3s ease-in-out infinite; }
+.char-big:last-child { animation-delay:1.5s; }
+@keyframes charFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.op-bubbles { width:100%; max-width:400px; display:flex; flex-direction:column; gap:10px; }
+.op-bubble { display:flex; gap:8px; align-items:flex-start; }
+.op-bubble.right { flex-direction:row-reverse; }
+.op-bubble-avatar { font-size:22px; flex-shrink:0; margin-top:4px; }
+.op-bubble-text { background:rgba(255,255,255,0.88); border:1.5px solid var(--brown-light); border-radius:14px; padding:8px 12px; font-size:13px; color:var(--brown-dark); line-height:1.55; max-width:calc(100% - 44px); box-shadow:0 2px 8px rgba(139,69,19,0.08); position:relative; }
+.op-bubble:not(.right) .op-bubble-text::before { content:''; position:absolute; left:-8px; top:10px; border:6px solid transparent; border-right-color:var(--brown-light); }
+.op-bubble:not(.right) .op-bubble-text::after { content:''; position:absolute; left:-6px; top:11px; border:5px solid transparent; border-right-color:rgba(255,255,255,0.88); }
+.op-bubble.right .op-bubble-text::before { content:''; position:absolute; right:-8px; top:10px; border:6px solid transparent; border-left-color:var(--brown-light); }
+.op-bubble.right .op-bubble-text::after { content:''; position:absolute; right:-6px; top:11px; border:5px solid transparent; border-left-color:rgba(255,255,255,0.88); }
+.stage-list { width:100%; max-width:400px; display:flex; flex-direction:column; gap:8px; }
+.stage-item { background:rgba(255,255,255,0.75); border:2px solid var(--brown-light); border-radius:14px; padding:12px 16px; display:flex; align-items:center; gap:12px; font-size:13px; }
+.stage-item .si-num { font-size:10px; font-weight:bold; color:var(--brown-mid); background:var(--brown-pale); border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.stage-item .si-emoji { font-size:18px; }
+.stage-item .si-era { font-weight:bold; }
+.btn-start { background:linear-gradient(135deg,#8b4513,#c8860a); color:#fff8e7; font-size:18px; font-weight:bold; padding:16px 48px; border:none; border-radius:30px; cursor:pointer; box-shadow:0 4px 16px rgba(139,69,19,0.35); letter-spacing:2px; transition:all 0.2s; width:100%; max-width:300px; }
+.btn-start:active { transform:scale(0.97); }
+#screen-game { padding:0; justify-content:flex-start; }
+.game-header { width:100%; background:linear-gradient(180deg,#4a2d0a 0%,#6b3e1a 100%); padding:10px 14px 8px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+.gh-top { display:flex; justify-content:space-between; align-items:center; }
+.gh-stage-info { color:#f5e6c8; font-size:12px; font-weight:bold; }
+.gh-lives { display:flex; gap:4px; font-size:18px; }
+.gh-bottom { display:flex; justify-content:space-between; align-items:center; }
+.gh-score { color:#f0d090; font-size:13px; font-weight:bold; }
+.gh-score span { color:#ffd700; font-size:16px; }
+.party-bar { width:100%; background:rgba(74,45,10,0.12); border-bottom:1px solid var(--brown-light); padding:6px 14px; display:flex; align-items:center; gap:6px; flex-shrink:0; min-height:40px; }
+.party-label { font-size:10px; color:var(--brown-mid); font-weight:bold; flex-shrink:0; }
+.party-members { display:flex; gap:4px; flex-wrap:wrap; }
+.party-member { font-size:22px; animation:memberJoin 0.4s ease-out; }
+@keyframes memberJoin { from{transform:scale(0) rotate(-180deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+.game-content { flex:1; width:100%; padding:12px 14px 16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.dialog-area { display:flex; flex-direction:column; gap:8px; }
+.dialog-bubble { display:flex; gap:8px; align-items:flex-start; }
+.dialog-bubble.right { flex-direction:row-reverse; }
+.dialog-avatar { font-size:20px; flex-shrink:0; margin-top:4px; }
+.dialog-text { background:rgba(255,255,255,0.88); border:1.5px solid var(--brown-light); border-radius:12px; padding:7px 11px; font-size:13px; line-height:1.5; max-width:calc(100% - 40px); box-shadow:0 2px 6px rgba(139,69,19,0.07); position:relative; }
+.dialog-bubble:not(.right) .dialog-text::before { content:''; position:absolute; left:-7px; top:9px; border:5px solid transparent; border-right-color:var(--brown-light); }
+.dialog-bubble:not(.right) .dialog-text::after { content:''; position:absolute; left:-5px; top:10px; border:4px solid transparent; border-right-color:rgba(255,255,255,0.88); }
+.dialog-bubble.right .dialog-text::before { content:''; position:absolute; right:-7px; top:9px; border:5px solid transparent; border-left-color:var(--brown-light); }
+.dialog-bubble.right .dialog-text::after { content:''; position:absolute; right:-5px; top:10px; border:4px solid transparent; border-left-color:rgba(255,255,255,0.88); }
+.puzzle-box { background:rgba(255,255,255,0.82); border:2px solid var(--brown-light); border-radius:18px; padding:14px; box-shadow:0 3px 12px rgba(139,69,19,0.1); }
+.puzzle-title { font-size:12px; font-weight:bold; color:var(--brown-mid); letter-spacing:1px; margin-bottom:8px; }
+.puzzle-desc { font-size:13px; color:var(--brown-dark); line-height:1.6; margin-bottom:8px; }
+.sort-area { display:flex; flex-direction:column; gap:10px; }
+.sort-slot-label { font-size:10px; color:var(--brown-mid); text-align:center; margin-bottom:4px; }
+.sort-slots { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; min-height:44px; background:rgba(212,169,106,0.15); border:1.5px dashed var(--brown-light); border-radius:10px; padding:6px; align-items:center; }
+.tile { background:linear-gradient(135deg,#fff8e7,#f5e6c8); border:2px solid var(--brown-light); border-radius:10px; min-width:40px; height:40px; padding:0 6px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.15s; box-shadow:0 2px 6px rgba(139,69,19,0.15); user-select:none; color:var(--brown-dark); }
+.tile:active { transform:scale(0.9); }
+.tile.in-answer { background:linear-gradient(135deg,#fff3cd,#ffe08a); border-color:var(--gold); }
+.riddle-text { background:rgba(255,248,210,0.95); border:2px solid var(--brown-light); border-radius:14px; padding:14px 16px; font-size:14px; line-height:1.75; color:var(--brown-dark); text-align:center; font-style:italic; margin-bottom:8px; }
+.riddle-choices { display:flex; flex-direction:column; gap:8px; }
+.riddle-choice { background:rgba(255,255,255,0.9); border:2px solid var(--brown-light); border-radius:12px; padding:11px 14px; font-size:14px; font-weight:bold; cursor:pointer; color:var(--brown-dark); display:flex; align-items:center; gap:10px; text-align:left; width:100%; }
+.riddle-choice:active { transform:scale(0.98); }
+.riddle-choice:disabled { cursor:default; }
+.slide-grid { display:grid; gap:6px; }
+.slide-grid-2x2 { grid-template-columns:repeat(2,1fr); }
+.slide-tile { width:80px; height:80px; font-size:28px; font-weight:bold; display:flex; align-items:center; justify-content:center; border-radius:14px; cursor:pointer; user-select:none; transition:transform 0.1s, background 0.2s; }
+.slide-tile.filled { background:linear-gradient(135deg,#fff8e7,#f5e6c8); border:2.5px solid var(--brown-light); box-shadow:0 3px 10px rgba(139,69,19,0.18); color:var(--brown-dark); }
+.slide-tile.filled:active { transform:scale(0.93); }
+.slide-tile.empty { background:rgba(212,169,106,0.1); border:2px dashed rgba(212,169,106,0.35); cursor:default; }
+.slide-tile.in-place { border-color:var(--green-ok); background:linear-gradient(135deg,#eafaf1,#d5f5e3); }
+.slide-tile.win-flash { background:linear-gradient(135deg,#d4edda,#a8d8a8); border-color:var(--green-ok); animation:correctPop 0.4s ease; }
+.slide-moves { font-size:12px; color:var(--brown-mid); text-align:center; }
+.opt-label { width:26px; height:26px; border-radius:50%; background:var(--brown-pale); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color:var(--brown-mid); flex-shrink:0; }
+.correct { background:linear-gradient(135deg,#d4edda,#a8d8a8) !important; border-color:var(--green-ok) !important; }
+.correct .opt-label { background:var(--green-ok); color:white; }
+.wrong-ans { background:linear-gradient(135deg,#fde8e8,#f5b8b8) !important; border-color:var(--red-life) !important; }
+.wrong-ans .opt-label { background:var(--red-life); color:white; }
+.quiz-box { background:rgba(255,255,255,0.88); border:2px solid var(--gold); border-radius:18px; padding:14px; box-shadow:0 3px 14px rgba(139,69,19,0.12); animation:slideUp 0.35s ease; }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.quiz-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.quiz-label { font-size:11px; font-weight:bold; color:var(--gold); background:rgba(200,134,10,0.1); padding:3px 10px; border-radius:12px; }
+.timer-ring { position:relative; width:44px; height:44px; flex-shrink:0; }
+.timer-svg { transform:rotate(-90deg); width:44px; height:44px; }
+.timer-track { fill:none; stroke:rgba(200,134,10,0.2); stroke-width:4; }
+.timer-progress { fill:none; stroke:var(--gold); stroke-width:4; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-text { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:bold; color:var(--gold); }
+.quiz-question { font-size:15px; font-weight:bold; color:var(--brown-dark); line-height:1.6; margin-bottom:12px; background:rgba(212,169,106,0.12); border-radius:10px; padding:10px 12px; }
+.quiz-options { display:flex; flex-direction:column; gap:8px; }
+.quiz-option { background:rgba(255,255,255,0.9); border:2px solid var(--brown-light); border-radius:12px; padding:11px 14px; font-size:14px; font-weight:bold; cursor:pointer; color:var(--brown-dark); text-align:left; display:flex; align-items:center; gap:10px; line-height:1.4; }
+.quiz-option:active:not(:disabled) { transform:scale(0.98); }
+.quiz-option:disabled { cursor:default; }
+.hint-btn { background:linear-gradient(135deg,#1a5276,var(--blue-hint)); color:white; font-size:13px; font-weight:bold; padding:8px 16px; border:none; border-radius:20px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.hint-btn:disabled { opacity:0.4; pointer-events:none; }
+.hint-bubble { background:rgba(234,242,251,0.95); border:2px solid var(--blue-hint); border-radius:14px; padding:10px 14px; font-size:13px; color:#1a3a5c; line-height:1.5; display:none; animation:slideUp 0.3s ease; }
+.hint-bubble.visible { display:block; }
+.feedback-overlay { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; z-index:100; background:rgba(0,0,0,0.5); backdrop-filter:blur(3px); }
+.feedback-overlay.visible { display:flex; }
+.feedback-card { background:var(--washi); border-radius:24px; padding:28px 32px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.25); max-width:320px; width:90%; animation:popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275); }
+@keyframes popIn { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
+.feedback-emoji { font-size:56px; margin-bottom:8px; }
+.feedback-title { font-size:22px; font-weight:bold; color:var(--brown-dark); margin-bottom:6px; }
+.feedback-sub { font-size:13px; color:var(--brown-mid); margin-bottom:16px; line-height:1.5; }
+.feedback-score { font-size:28px; font-weight:bold; color:var(--gold); margin-bottom:6px; }
+.feedback-member { font-size:38px; margin-bottom:8px; }
+.feedback-member-name { font-size:14px; color:var(--green-ok); font-weight:bold; margin-bottom:16px; white-space:pre-line; }
+.btn-next { background:linear-gradient(135deg,#8b4513,var(--gold)); color:#fff8e7; font-size:16px; font-weight:bold; padding:13px 36px; border:none; border-radius:26px; cursor:pointer; box-shadow:0 4px 14px rgba(139,69,19,0.3); width:100%; }
+.btn-next:active { transform:scale(0.97); }
+.special-screen { width:100%; max-width:400px; padding:24px 16px 40px; display:flex; flex-direction:column; align-items:center; gap:16px; margin:0 auto; }
+.special-emoji { font-size:72px; text-align:center; }
+.special-title { font-size:26px; font-weight:bold; color:var(--brown-dark); text-align:center; line-height:1.3; }
+.special-sub { font-size:14px; color:var(--brown-mid); text-align:center; }
+.special-score { font-size:36px; font-weight:bold; color:var(--gold); text-align:center; }
+.party-display { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:36px; }
+.btn-menu { background:rgba(255,255,255,0.8); border:2px solid var(--brown-light); color:var(--brown-dark); font-size:15px; font-weight:bold; padding:12px 32px; border-radius:24px; cursor:pointer; width:100%; max-width:280px; text-align:center; }
+.mt8 { margin-top:8px; }
+.text-center { text-align:center; }
+.phase-label { font-size:11px; font-weight:bold; color:var(--brown-mid); background:var(--brown-pale); padding:3px 12px; border-radius:12px; display:inline-block; margin-bottom:6px; }
+@keyframes correctPop { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+.shake { animation:shake 0.4s ease; }
+.score-pop { position:fixed; font-size:20px; font-weight:bold; color:var(--gold); pointer-events:none; z-index:200; animation:scoreFly 1.2s ease forwards; }
+@keyframes scoreFly { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.3)} }
+.dialog-tap-hint { text-align:center; font-size:11px; color:var(--brown-mid); padding:6px 0; cursor:pointer; animation:pulse 1.2s ease-in-out infinite; user-select:none; -webkit-user-select:none; }
+@keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:1} }
+.char-big-img { width:80px; height:80px; border-radius:50%; object-fit:cover; object-position:top center; border:3px solid var(--brown-light); filter:drop-shadow(2px 3px 6px rgba(0,0,0,0.2)); animation:charFloat 3s ease-in-out infinite; flex-shrink:0; }
+.char-big-img:last-child { animation-delay:1.5s; }
+.avatar-sm { width:40px; height:40px; border-radius:50%; object-fit:cover; object-position:top center; border:2px solid var(--brown-light); flex-shrink:0; background:var(--brown-pale); }
+</style>
+</head>
+<body>
+
+<div id="screen-opening" class="screen active">
+  <div class="special-screen" style="padding-top:20px">
+    <div style="text-align:center">
+      <div class="opening-badge">知育謎解きRPG・世界史編</div>
+      <div class="opening-title">アキオとパチョの<br>謎解きトラベラー</div>
+      <div class="opening-sub">古代文明から近現代まで謎を解け！</div>
+    </div>
+    <div class="char-display">
+      <img src="akio.svg" class="char-big-img" alt="アキオ">
+      <img src="pacho.svg" class="char-big-img" alt="パチョ">
+    </div>
+    <div class="deco-line"></div>
+    <div class="op-bubbles">
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">パチョ！世界史だ！！エジプト！ローマ！フランス革命！！もう最高！！</div></div>
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">落ち着け。パズルを解いてクイズに正解すれば仲間ゲットだ。まず聞け。</div></div>
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">ライフは❤️❤️❤️！ヒントは🦉フクロウ博士！でもスコアが半分になるぞ！！</div></div>
+    </div>
+    <div class="stage-list">
+      <div class="stage-item"><div class="si-num">1</div><div class="si-emoji">🏺</div><div class="si-era">四大文明</div></div>
+      <div class="stage-item"><div class="si-num">2</div><div class="si-emoji">🏛️</div><div class="si-era">古代ギリシャ・ローマ</div></div>
+      <div class="stage-item"><div class="si-num">3</div><div class="si-emoji">⚔️</div><div class="si-era">中世ヨーロッパ</div></div>
+      <div class="stage-item"><div class="si-num">4</div><div class="si-emoji">🚢</div><div class="si-era">大航海時代・ルネサンス</div></div>
+      <div class="stage-item"><div class="si-num">5</div><div class="si-emoji">⚙️</div><div class="si-era">市民革命・産業革命</div></div>
+      <div class="stage-item"><div class="si-num">6</div><div class="si-emoji">🌍</div><div class="si-era">帝国主義・近現代</div></div>
+    </div>
+    <button class="btn-start" onclick="startGame()">冒険を始める！</button>
+    <a href="quiz-genre.html" style="font-size:13px;color:var(--brown-mid);text-decoration:none;">← ジャンル選択に戻る</a>
+  </div>
+</div>
+
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="gh-top">
+      <div class="gh-stage-info" id="stage-label">ステージ 1 / 6</div>
+      <div class="gh-lives" id="lives-display">❤️❤️❤️</div>
+    </div>
+    <div class="gh-bottom">
+      <div class="gh-score">スコア <span id="score-display">0</span></div>
+      <button class="hint-btn" id="hint-btn" onclick="useHint()">🦉 ヒント</button>
+    </div>
+  </div>
+  <div class="party-bar"><div class="party-label">仲間：</div><div class="party-members" id="party-members"></div></div>
+  <div class="game-content" id="game-content"></div>
+</div>
+
+<div id="screen-clear" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji" id="clear-emoji">🎉</div>
+    <div class="special-title" id="clear-title">ステージクリア！</div>
+    <div class="op-bubbles" id="clear-bubbles" style="width:100%;max-width:380px"></div>
+    <div class="party-display" id="clear-party"></div>
+    <div class="special-score" id="clear-score"></div>
+    <button class="btn-next" id="btn-clear-next">次のステージへ →</button>
+    <button class="btn-menu" onclick="goMenu()">← タイトルに戻る</button>
+  </div>
+</div>
+
+<div id="screen-gameover" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji">💀</div>
+    <div class="special-title">ゲームオーバー</div>
+    <div class="op-bubbles" style="width:100%;max-width:380px">
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">…まあ、世界史は範囲が広いからな。</div></div>
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">世界の神様！もう一度チャンスを！！</div></div>
+    </div>
+    <div class="special-score" id="go-score"></div>
+    <button class="btn-start" onclick="startGame()">もう一度挑戦！</button>
+    <button class="btn-menu" onclick="goMenu()">← タイトルに戻る</button>
+  </div>
+</div>
+
+<div id="screen-result" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji">🏆</div>
+    <div class="special-title">全ステージ制覇！</div>
+    <div class="op-bubbles" style="width:100%;max-width:380px">
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">やった！世界史の謎を全部解いたぞ！！！</div></div>
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">素直に認める。よくやった。…ちょっとだけな。</div></div>
+    </div>
+    <div class="special-sub">集めた仲間たち</div>
+    <div class="party-display" id="result-party"></div>
+    <div class="special-score" id="result-score"></div>
+    <button class="btn-start" onclick="startGame()">もう一度遊ぶ</button>
+    <button class="btn-menu" onclick="goMenu()">← ジャンル選択に戻る</button>
+  </div>
+</div>
+
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-card">
+    <div class="feedback-emoji" id="fb-emoji"></div>
+    <div class="feedback-title" id="fb-title"></div>
+    <div class="feedback-sub" id="fb-sub"></div>
+    <div class="feedback-member" id="fb-member"></div>
+    <div class="feedback-member-name" id="fb-member-name"></div>
+    <div class="feedback-score" id="fb-score"></div>
+    <button class="btn-next" onclick="closeFeedback()">続ける →</button>
+  </div>
+</div>
+
+<script>
+const STAGES = [
+  {
+    id:1, era:"四大文明", emoji:"🏺", bgColor:"rgba(180,140,60,0.08)",
+    member:{ emoji:"🗿", name:"ファラオ", msg:"ナイルの加護を与えよう！" },
+    openingDialogs:[
+      {who:"akio", text:"エジプト！ピラミッド！ナイル川！！テンション上がりすぎる！！"},
+      {who:"pacho", text:"落ち着け。ナイルが氾濫すると農業が豊かになる理由言えるか？"},
+      {who:"akio", text:"肥沃な土が運ばれてくるから！！文明の起源だ！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"古代エジプト文明を育てた「天の賜物」と呼ばれた川の名前を並べよ！",
+        chars:["ナ","イ","ル"], answer:["ナ","イ","ル"],
+        displayAnswer:"ナイル川",
+        explanation:"ナイル川！ヘロドトスが「エジプトはナイルの賜物」と言った。定期的な氾濫が肥沃な土をもたらし農業文明を支えた。",
+        quiz:{ question:"エジプト文明に関して最も正しいものはどれか？",
+          options:["ナイル川の定期的な氾濫がもたらす肥沃な土壌を利用した農業が文明を支えた","チグリス・ユーフラテス川流域に成立し楔形文字が発明された","インダス川流域に成立しモヘンジョ・ダロが計画都市として建設された","長江・黄河流域に成立し殷・周などの王朝が発展した"],
+          correct:0, explanation:"エジプト文明はナイル川の恵みで繁栄！四大文明と川の対応：メソポタミア＝チグリス・ユーフラテス、インダス＝インダス川、中国＝黄河・長江。必ずセットで覚えよう！" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"メソポタミアで葦のペンと粘土板に記された世界最古の文字体系。「楔形」の最初3文字を作れ！",
+        word:["く","さ","び"], cols:2, rows:2,
+        hint_word:"楔形（くさびがた）文字",
+        explanation:"くさびがた＝楔形文字！シュメール人が発明した世界最古の文字の一つ。商業記録やハンムラビ法典に使用された。",
+        quiz:{ question:"メソポタミア文明に関して最も正しいものはどれか？",
+          options:["チグリス・ユーフラテス川流域に成立しシュメール人が楔形文字を発明した","ナイル川流域に成立しファラオを中心とした神権政治が行われた","インダス川流域に成立し高度な都市計画を持つモヘンジョ・ダロが建設された","黄河流域に成立し甲骨文字が使われ殷王朝が発展した"],
+          correct:0, explanation:"メソポタミア文明はチグリス・ユーフラテス川流域！シュメール人→バビロニア→アッシリアと発展。楔形文字・六十進法・太陰暦などが後の文明に継承された。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは紀元前18世紀、バビロン第一王朝のハンムラビ王が制定した法典だ。「目には目を、歯には歯を」という同害報復の原則で有名だ。282条からなり世界最古の成文法の一つとされる。わたしは何？",
+        choices:["ハンムラビ法典","マグナ・カルタ","十二表法","ローマ法大全"], correctIdx:0,
+        explanation:"ハンムラビ法典！紀元前18世紀制定。報復法・身分制度を規定。石碑は現在パリのルーブル美術館に展示されている。",
+        quiz:{ question:"ハンムラビ法典の特徴として最も正しいものはどれか？",
+          options:["目には目を・歯には歯をという同害報復原則を含む紀元前18世紀の成文法","古代ローマが市民の権利保護のために制定した最初の成文法","イギリスで国王の権力を制限するために制定された貴族の権利憲章","ナポレオンが革命の理念を法典化した近代民法の基礎"],
+          correct:0, explanation:"ハンムラビ法典は同害報復の原則と身分に応じた刑罰が特徴！身分（自由人・奴隷）により刑罰が異なる点も重要。マグナ・カルタはイギリス（1215年）、十二表法はローマだ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは古代エジプトの王（ファラオ）の巨大な墓だ。ギザには3つの大きな建造物がある。最大のものは紀元前2560年頃クフ王のために建てられ、高さ約138m。古代七不思議で唯一現存する遺跡だ。わたしは何？",
+        choices:["ピラミッド","パルテノン神殿","コロッセオ","万里の長城"], correctIdx:0,
+        explanation:"ピラミッド！ギザの三大ピラミッドが有名。古代七不思議で唯一現存。隣のスフィンクス（ライオンの体・人間の顔）も有名だ。",
+        quiz:{ question:"古代エジプトのファラオ（王）の政治的性格として最も正しいものはどれか？",
+          options:["神の化身として宗教的・政治的権威を一身に持つ専制君主（神権政治）","民主的な選挙で選ばれた市民の代表者","元老院が選出する共和政の最高執政官","貴族の合議によって選ばれた封建的な君主"],
+          correct:0, explanation:"ファラオは神（太陽神ラーの子）として崇拝された神権政治の権力者！死後の世界を信じピラミッドやミイラを作った。古代エジプトの政治・宗教・文化の中心だ。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"ファラオが仲間に！！ピラミッドの秘密教えてもらう！！"},
+      {who:"pacho", text:"秘密より次のステージだ。古代ギリシャいくぞ。"}
+    ],
+    hint:"四大文明と川の対応（エジプト＝ナイル、メソポタミア＝チグリス・ユーフラテス）を考えよ🦉"
+  },
+  {
+    id:2, era:"古代ギリシャ・ローマ", emoji:"🏛️", bgColor:"rgba(100,120,180,0.08)",
+    member:{ emoji:"🏛️", name:"哲学者", msg:"汝自身を知れ！" },
+    openingDialogs:[
+      {who:"akio", text:"ギリシャ！！哲学！！民主主義！！オリンピックも起源ここ！！"},
+      {who:"pacho", text:"ソクラテスはなぜ死んだか言えるか？"},
+      {who:"akio", text:"毒ニンジン飲まされた！！不当裁判の犠牲者！！"},
+      {who:"pacho", text:"まあそうだ。問題いくぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"古代ギリシャの都市国家の呼び名「□□□」を並べよ！（政治・politicsの語源）",
+        chars:["ポ","リ","ス"], answer:["ポ","リ","ス"],
+        displayAnswer:"ポリス（polis）",
+        explanation:"ポリス！古代ギリシャの都市国家。アテネ（民主政）とスパルタ（軍国主義）が代表。「政治（politics）」の語源だ。",
+        quiz:{ question:"古代アテネの民主政について最も正しいものはどれか？",
+          options:["成年男性市民が参加する直接民主政が行われたが女性・奴隷・外国人は除外された","すべての住民が平等に参政権を持つ普通選挙制度が整備されていた","少数の貴族・元老院議員が独占する共和政が確立されていた","王（ファラオ）の権威のもとで神権政治が行われていた"],
+          correct:0, explanation:"アテネ民主政は直接民主政だが参加できたのは成年男性市民のみ！女性・奴隷・外国人（メトイコイ）は除外。ペリクレス時代に最盛期を迎えた。「民主主義の原型」だが制限付きだ。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"「全ての道はここに通ず」と言われた地中海世界を支配した大帝国の名前を作れ！",
+        word:["ロ","ー","マ"], cols:2, rows:2,
+        hint_word:"ローマ（帝国）",
+        explanation:"ローマ！地中海を「我らの海（マーレ・ノストルム）」と呼んだ。道路・水道・法律など西洋文明の基盤を作った。",
+        quiz:{ question:"ローマ帝国の成立に関して最も正しいものはどれか？",
+          options:["共和政から帝政に移行しオクタウィアヌス（アウグストゥス）が初代皇帝となった","ソクラテス・プラトン・アリストテレスの哲学者が支配した哲人政治が行われた","アレクサンドロス大王が地中海を征服し東方文化と融合させた","ペリクレスが直接民主政を完成させた民主主義帝国だった"],
+          correct:0, explanation:"ローマは共和政（紀元前509年〜）→カエサルによる独裁→オクタウィアヌスが「アウグストゥス（尊厳者）」の称号を得て帝政開始（紀元前27年）という流れが入試頻出だ！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは紀元前5世紀のアテネの哲学者だ。「無知の知」を説き問答法で真理を追求した。民主政を批判したとして不敬神・青年堕落の罪で告発され死刑となった。著作は残さず弟子プラトンの対話篇で知られる。わたしは誰？",
+        choices:["ソクラテス","プラトン","アリストテレス","ヘロドトス"], correctIdx:0,
+        explanation:"ソクラテス！「汝自身を知れ」も有名。西洋哲学の祖。弟子のプラトンがイデア論を展開し、プラトンの弟子アリストテレスが万学の祖となった。",
+        quiz:{ question:"ソクラテス・プラトン・アリストテレスの系譜として最も正しいものはどれか？",
+          options:["ソクラテス→プラトン（イデア論）→アリストテレス（万学の祖）という師弟関係","ソクラテス→アリストテレス→プラトンという順で思想が発展した","三人は互いに無関係でそれぞれ独立した哲学体系を持っていた","アリストテレスがソクラテスを告発しプラトンが審判した"],
+          correct:0, explanation:"ソクラテス→プラトン→アリストテレスの師弟関係は必須！プラトンはイデア論・哲人政治を提唱。アリストテレスは論理学・生物学・政治学など多分野で業績を残した万学の祖だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしはマケドニアの王だ。紀元前4世紀にペルシア・エジプト・インドにまで遠征し大帝国を築いた。家庭教師はアリストテレス。33歳で急死し帝国は分裂したが、東西文化が融合したヘレニズム文化が生まれた。わたしは誰？",
+        choices:["アレクサンドロス大王","カエサル","ハンニバル","アウグストゥス"], correctIdx:0,
+        explanation:"アレクサンドロス大王！各地にアレクサンドリアを建設。ギリシャ文化とオリエント文化が融合したヘレニズム文化を生んだ。",
+        quiz:{ question:"ヘレニズム文化の特徴として最も正しいものはどれか？",
+          options:["アレクサンドロスの東方遠征によりギリシャ文化とオリエント文化が融合した普遍的文化","ローマが地中海世界を統一したことで生まれたラテン語中心のローマ文化","十字軍遠征を通じてイスラム文化がヨーロッパに伝わった融合文化","大航海時代にヨーロッパ文化が世界各地に広まったグローバル文化"],
+          correct:0, explanation:"ヘレニズム文化はギリシャ（ヘラス）文化の国際化！アレクサンドリアが文化の中心（図書館・ムセイオン）。個人主義・世界市民主義（コスモポリタニズム）が特徴だ。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"哲学者仲間に！！パチョに問答しかけてもらう！！"},
+      {who:"pacho", text:"お前に論破されるのは御免だ。次、中世いくぞ。"}
+    ],
+    hint:"アテネの民主政は「直接民主政」だが参加できたのは成年男性市民のみ。ポリスとローマの違いを考えよ🦉"
+  },
+  {
+    id:3, era:"中世ヨーロッパ", emoji:"⚔️", bgColor:"rgba(80,80,80,0.06)",
+    member:{ emoji:"🗡️", name:"騎士", msg:"名誉にかけて戦う！" },
+    openingDialogs:[
+      {who:"akio", text:"中世！！騎士！！魔女！！ペスト！！暗黒時代！！なのに好き！！"},
+      {who:"pacho", text:"暗黒時代と呼ばれるが文化も発展した。十字軍は何回あった？"},
+      {who:"akio", text:"7〜8回！！ほぼ全部失敗！！"},
+      {who:"pacho", text:"正確だな。問題いくぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"聖地エルサレム奪回を目指してローマ教皇が呼びかけた遠征「□□□□軍」の□□□□を並べよ！",
+        chars:["じ","ゅ","う","じ"], answer:["じ","ゅ","う","じ"],
+        displayAnswer:"十字（じゅうじ）軍",
+        explanation:"十字軍！1096年第1回から約200年にわたる遠征。ほとんど失敗に終わりローマ教皇の権威低下につながった。",
+        quiz:{ question:"十字軍（1096〜1291年）の歴史的意義として最も正しいものはどれか？",
+          options:["聖地回復には失敗したがイスラム文化の知識がヨーロッパに伝わり中世文化の発展に貢献した","聖地回復に成功しローマ教皇の権威が絶頂に達した","十字軍がイスラム教をヨーロッパに伝えキリスト教との融合が進んだ","十字軍により封建制度が強化され農奴の地位が低下した"],
+          correct:0, explanation:"十字軍はほぼ失敗！しかしイスラム世界との接触でアラビア数字・代数学・哲学がヨーロッパに伝わった。ローマ教皇の権威は低下し、商業の発展・都市の成長・封建制崩壊を促した。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"主君が家臣に土地（封土）を与え軍役・忠誠を誓わせた中世の社会制度「封建（ほうけん）」の最初3文字を作れ！",
+        word:["ほ","う","け"], cols:2, rows:2,
+        hint_word:"封建（ほうけん）制度",
+        explanation:"ほうけん＝封建（制度）！王→諸侯→騎士→農奴の階層的な土地支配制度。日本の武家社会の封建制度と比較されることも多い。",
+        quiz:{ question:"中世ヨーロッパの封建制度について最も正しいものはどれか？",
+          options:["主君が封土を与え家臣が軍役・忠誠を誓う主従関係による土地支配制度","農民が自由に土地を所有し国家に税を納める近代的な土地制度","教会が全ての土地を管理し農民に貸し出す神権的土地制度","商人が財力で政治的権力を得る重商主義的な社会制度"],
+          correct:0, explanation:"封建制度！封主（土地を与える側）と封臣（軍役・忠誠を誓う側）の双務的契約関係。農奴はマナー（荘園）に縛り付けられ领主に賦役・貢納を行った。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1215年にイギリスのジョン王が署名した文書だ。貴族の要求により王の権力を制限し、法の支配と貴族・教会の権利を保障した。後の議会政治・立憲主義の原点とされる。わたしは何？",
+        choices:["マグナ・カルタ","権利の章典","アメリカ独立宣言","フランス人権宣言"], correctIdx:0,
+        explanation:"マグナ・カルタ（大憲章）！1215年ジョン王が署名。「王もまた法に縛られる」法の支配の原則を確立。近代立憲主義の出発点だ。",
+        quiz:{ question:"マグナ・カルタ（1215年）が後世に与えた影響として最も正しいものはどれか？",
+          options:["法の支配の原則を確立し後のイギリス議会政治・立憲主義の原点となった","即座に民主主義が実現しイギリスで普通選挙が始まった","フランス革命に直接影響を与えフランスの人権宣言の基礎となった","キリスト教の権威を否定し宗教改革の引き金となった"],
+          correct:0, explanation:"マグナ・カルタは貴族の権利保護が目的だったが、後に「法の支配」「不当逮捕の禁止」の原則として発展！1628年の権利の請願→1689年の権利の章典へとつながるイギリス立憲主義の流れだ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは14世紀にヨーロッパを席巻した伝染病だ。ネズミに寄生するノミが媒介。ヨーロッパ人口の約3分の1を死亡させたとされ、カトリック教会の権威低下や農奴の地位向上にもつながった。わたしは何？",
+        choices:["黒死病（ペスト）","天然痘","コレラ","スペイン風邪"], correctIdx:0,
+        explanation:"黒死病（ペスト）！1347〜51年に大流行。人口激減が農奴の労働力不足を生み封建制崩壊を加速させた。",
+        quiz:{ question:"黒死病（ペスト）がヨーロッパ中世社会に与えた影響として最も正しいものはどれか？",
+          options:["人口激減で農奴の地位が向上し封建制の崩壊が加速した","人口激減で教会の権威が高まりローマ教皇の権力が絶頂に達した","人口激減で農業が壊滅し大航海時代が始まった","人口激減でヨーロッパ各国が連合してイスラム世界への十字軍を強化した"],
+          correct:0, explanation:"ペスト後の社会変動が中世解体の一因！農奴が少なくなり領主は好条件を提示せざるを得なくなった。また「死の舞踏」など芸術にも影響を与え、カトリック教会の無力さが権威低下につながった。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"騎士仲間になった！！一緒に聖地目指す！！"},
+      {who:"pacho", text:"十字軍はほぼ失敗してる。次は大航海時代だ。"}
+    ],
+    hint:"十字軍はほぼ失敗したが、イスラム文化との接触でヨーロッパ文化が発展した側面も考えよ🦉"
+  },
+  {
+    id:4, era:"大航海時代・ルネサンス", emoji:"🚢", bgColor:"rgba(60,100,160,0.07)",
+    member:{ emoji:"🚢", name:"探検家", msg:"新世界を目指せ！" },
+    openingDialogs:[
+      {who:"akio", text:"大航海時代！！コロンブス！！地球丸かった！！"},
+      {who:"pacho", text:"コロンブスがアメリカに着いたのは何年だ？"},
+      {who:"akio", text:"1492年！！インドと勘違い！！世界最大の勘違い！！"},
+      {who:"pacho", text:"まあ結果的に世界が変わった。問題いくぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"14〜16世紀イタリアから始まった「文芸復興」運動「□□□ンス」の最初3文字を並べよ！",
+        chars:["ル","ネ","サ"], answer:["ル","ネ","サ"],
+        displayAnswer:"ルネサ（ンス）＝ルネサンス",
+        explanation:"ルネサンス！イタリア語で「再生」。古代ギリシャ・ローマ文化の復興を目指した。レオナルド・ダ・ヴィンチ、ミケランジェロを輩出。",
+        quiz:{ question:"ルネサンスの特徴として最も正しいものはどれか？",
+          options:["古代ギリシャ・ローマ文化の復興を目指し人間中心主義（ヒューマニズム）を掲げた文化運動","十字軍を通じてイスラム文化がヨーロッパに伝わった融合運動","宗教改革の影響でカトリック教会が主導した信仰刷新運動","産業革命後に科学技術の発展を礼賛する合理主義運動"],
+          correct:0, explanation:"ルネサンスはイタリア（フィレンツェ）から始まった！メディチ家などの商人がパトロンとなり芸術家を支援。「人間は万物の尺度」→神中心→人間中心への転換が重要だ。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"1492年にサンサルバドル島に到達しアメリカ大陸への道を開いた探検家の名前の最初3文字を作れ！",
+        word:["コ","ロ","ン"], cols:2, rows:2,
+        hint_word:"コロン（ブス）＝コロンブス",
+        explanation:"コロン＝コロンブス！スペイン女王イサベル1世の支援で西回り航路を開拓し西インド諸島に到達。「新大陸発見」の先駆けだ。",
+        quiz:{ question:"大航海時代の探検家と業績の組み合わせとして最も正しいものはどれか？",
+          options:["コロンブス（スペイン）＝西インド諸島到達、バスコ・ダ・ガマ（ポルトガル）＝インド航路開拓","コロンブス（ポルトガル）＝インド直航路、マゼラン（スペイン）＝北アメリカ到達","バスコ・ダ・ガマ（スペイン）＝アメリカ大陸発見、コロンブス（ポルトガル）＝世界一周","マゼラン（ポルトガル）＝インド航路、コロンブス（スペイン）＝アフリカ一周"],
+          correct:0, explanation:"大航海時代の重要人物：コロンブス（スペイン・1492年西インド諸島）、バスコ・ダ・ガマ（ポルトガル・1498年インド航路）、マゼラン（スペイン・1522年世界一周完成）。国籍と業績のセットで覚えよう！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしはポーランドの天文学者だ。16世紀に「地球が太陽の周りを回る」地動説を唱えた。当時の教会が支持した天動説を否定し危険視された。晩年に著書「天体の回転について」を出版した。わたしは誰？",
+        choices:["コペルニクス","ガリレオ・ガリレイ","ニュートン","ケプラー"], correctIdx:0,
+        explanation:"コペルニクス！1543年に地動説を提唱。ガリレオが望遠鏡で支持、ケプラーが惑星運動の法則を発見、ニュートンが万有引力で完成させた科学革命の起点だ。",
+        quiz:{ question:"科学革命の流れとして最も正しいものはどれか？",
+          options:["コペルニクスの地動説→ガリレオの望遠鏡観測による支持→ニュートンの万有引力の法則で完成","ガリレオが地動説を提唱しコペルニクスが望遠鏡で確認してニュートンが否定した","ニュートンが天動説を確立しコペルニクスが修正してガリレオが完成させた","中世の錬金術→コペルニクスの元素発見→ガリレオの相対性理論への流れ"],
+          correct:0, explanation:"科学革命の流れ：コペルニクス（地動説・1543年）→ガリレオ（望遠鏡・慣性の法則・宗教裁判）→ケプラー（惑星の楕円軌道）→ニュートン（万有引力・光学）。入試では「コペルニクス的転回」も重要！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは15世紀ドイツの技術者だ。金属活字を使った印刷技術を発明し聖書を大量印刷した。情報の普及を劇的に変え、ルターの宗教改革やルネサンスの拡大に貢献した。わたしは誰？",
+        choices:["グーテンベルク","ルター","カルヴァン","エラスムス"], correctIdx:0,
+        explanation:"グーテンベルク！活版印刷の発明で書物の大量生産が可能に。知識・情報の民主化が起き、宗教改革・ルネサンスの普及に貢献した。",
+        quiz:{ question:"グーテンベルクの活版印刷が社会に与えた影響として最も正しいものはどれか？",
+          options:["情報の大量普及が可能となりルターの宗教改革・ルネサンスの拡大に貢献した","活版印刷でラテン語が一般に広まりカトリック教会が強化された","印刷技術の普及で識字率が下がり教会が知識を独占するようになった","活版印刷により大航海時代の航海図が精密化され探検が活発になった"],
+          correct:0, explanation:"活版印刷は「情報革命」！それまで手書き写本で少数しかなかった書物が大量生産可能になった。聖書が各国語に翻訳・普及し、ルターの宗教改革（1517年）を加速させた重要発明だ。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"探検家仲間に！！新大陸行きたい！！"},
+      {who:"pacho", text:"すでに発見されてる。次は市民革命だ。"}
+    ],
+    hint:"コロンブス＝スペイン・西インド諸島、バスコ・ダ・ガマ＝ポルトガル・インド航路。国籍と業績を正確に結びつけよ🦉"
+  },
+  {
+    id:5, era:"市民革命・産業革命", emoji:"⚙️", bgColor:"rgba(80,120,60,0.07)",
+    member:{ emoji:"⚙️", name:"革命家", msg:"自由・平等・博愛！" },
+    openingDialogs:[
+      {who:"akio", text:"フランス革命！！自由！！平等！！博愛！！ギロチン！！"},
+      {who:"pacho", text:"最後のギロチンが一番大きかったな。"},
+      {who:"akio", text:"革命ってつらい歴史だよ！！でもナポレオン出てくるから熱い！！"},
+      {who:"pacho", text:"問題いくぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"1789年「自由・平等・博愛」を掲げ市民が王政を倒した革命の国名を並べよ！",
+        chars:["フ","ラ","ン","ス"], answer:["フ","ラ","ン","ス"],
+        displayAnswer:"フランス（革命）",
+        explanation:"フランス革命！1789年バスティーユ牢獄襲撃で始まった。人権宣言を発布し王政を廃止。近代民主主義の原点となった。",
+        quiz:{ question:"フランス革命（1789年）について最も正しいものはどれか？",
+          options:["バスティーユ牢獄の襲撃で始まり人権宣言を発布し王政を廃止した市民革命","名誉革命とも呼ばれイギリスで国王が議会の権力を認めた無血革命","北米13州がイギリスからの独立を宣言した独立戦争","清教徒（ピューリタン）がクロムウェルのもとで行った宗教改革運動"],
+          correct:0, explanation:"フランス革命：バスティーユ牢獄襲撃（1789.7.14）→人権宣言→ルイ16世処刑（1793）→ロベスピエールの恐怖政治→テルミドールのクーデタ→ナポレオンの台頭という流れが重要だ！" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"産業革命の原動力となったワットが改良した動力機関「蒸気（じょうき）機関」の最初3文字を作れ！",
+        word:["じ","ょ","う"], cols:2, rows:2,
+        hint_word:"蒸気（じょうき）機関",
+        explanation:"じょう＝蒸気（機関）！18世紀イギリスでワットが改良。紡績・製鉄・鉄道などに活用され産業革命の原動力となった。",
+        quiz:{ question:"産業革命（18世紀〜イギリス）について最も正しいものはどれか？",
+          options:["ワットの蒸気機関改良を契機に機械制大工場生産が普及しイギリスが世界の工場となった","フランスでナポレオンが主導した軍事技術革新が産業発展をもたらした","アメリカで奴隷解放後の南部農業が工業化し経済成長した","電気の発明が産業革命の直接の原因となりイギリスが電力先進国となった"],
+          correct:0, explanation:"産業革命はイギリスで18世紀後半に始まった！綿工業（紡績機→力織機）→蒸気機関の改良（ワット）→製鉄・石炭→鉄道の普及という流れ。「世界の工場」として自由貿易を推進した。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしはフランス革命後に台頭した軍人だ。1799年のクーデタで権力を握り1804年に皇帝となった。法典を制定し征服地に革命の理念を広めた。最終的にワーテルローの戦いで敗れセントヘレナ島で死去した。わたしは誰？",
+        choices:["ナポレオン・ボナパルト","ロベスピエール","ルイ16世","ビスマルク"], correctIdx:0,
+        explanation:"ナポレオン・ボナパルト！コルシカ島出身の軍人。ナポレオン法典で近代民法の基礎を作った。1821年セントヘレナ島で死去。",
+        quiz:{ question:"ナポレオン法典の内容として最も正しいものはどれか？",
+          options:["法の下の平等・私有財産の不可侵・契約の自由を規定した近代民法の基礎","封建的特権を廃止しフランス農民の土地所有を認めた農地改革法","国民主権・三権分立を定めたフランス共和国最初の憲法","ナポレオンが征服国に課した賠償・協力義務を定めた国際条約"],
+          correct:0, explanation:"ナポレオン法典（1804年）は法の下の平等・私有財産の不可侵・契約の自由の3原則！フランス革命の理念を法典化。ベルギー・スペイン・ラテンアメリカなど多くの国の民法に影響を与えた。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1776年7月4日にアメリカ13州が採択した文書だ。ジェファーソンが起草し「すべての人間は平等に作られ、生命・自由・幸福追求の権利を持つ」と宣言した。ロックの自然権思想の影響を強く受けている。わたしは何？",
+        choices:["アメリカ独立宣言","フランス人権宣言","イギリス権利章典","国際連合憲章"], correctIdx:0,
+        explanation:"アメリカ独立宣言！1776年7月4日採択（現在の独立記念日）。ジョン・ロックの天賦人権論・社会契約論を基に人民主権と革命権を宣言した。",
+        quiz:{ question:"アメリカ独立宣言（1776年）に関して最も正しいものはどれか？",
+          options:["ジェファーソン起草でロックの自然権思想を基に生命・自由・幸福追求の権利を宣言","フランス革命後に人民主権・自由・平等を宣言したフランスの権利宣言","イギリス名誉革命後に国王の権限制限と議会の権利を確認した文書","ウィルソン大統領が第一次世界大戦後に提唱した民族自決原則の宣言"],
+          correct:0, explanation:"独立宣言はジョン・ロックの影響大！「生命・自由・幸福の追求」はロックの「生命・自由・財産」を修正したもの。社会契約論・抵抗権も盛り込まれ、フランス革命の人権宣言（1789年）にも影響を与えた。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"革命家仲間になった！！バスティーユ牢獄壊しに行く！！"},
+      {who:"pacho", text:"すでに博物館になってる。最終ステージ、帝国主義いくぞ。"}
+    ],
+    hint:"フランス革命（1789年）とアメリカ独立宣言（1776年）の前後関係と相互影響を考えよ。ロックの思想がつなぐ🦉"
+  },
+  {
+    id:6, era:"帝国主義・近現代", emoji:"🌍", bgColor:"rgba(40,80,120,0.08)",
+    member:{ emoji:"🌍", name:"外交官", msg:"平和な世界を作ろう！" },
+    openingDialogs:[
+      {who:"akio", text:"近現代！！帝国主義！！世界大戦！！冷戦！！現在につながる歴史！！"},
+      {who:"pacho", text:"第一次世界大戦は何年に始まった？"},
+      {who:"akio", text:"1914年！！サラエボ事件が引き金！！"},
+      {who:"pacho", text:"そうだ。最終ステージ、全力でいけ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"1945年設立・現在193か国が加盟する最大の国際機構「□□□□ごう」の□□□□を並べよ！",
+        chars:["こ","く","れ","ん"], answer:["こ","く","れ","ん"],
+        displayAnswer:"国連（こくれん）＝国際連合",
+        explanation:"国際連合（国連）！第二次世界大戦後1945年設立。安全保障理事会・総会・専門機関で構成。本部はニューヨーク。",
+        quiz:{ question:"国際連合（1945年設立）と国際連盟（1920年設立）の比較として最も正しいものはどれか？",
+          options:["国際連盟はアメリカ不参加・全会一致制で機能不全、国連は安保理の多数決制を採用した","国際連盟も国連もアメリカが中心となり設立した同様の機構","国連は国際連盟と異なり軍事力を持たず経済制裁のみで平和維持する","国際連盟はソ連が設立し国連はアメリカが設立した対立する機構"],
+          correct:0, explanation:"国際連盟の失敗（アメリカ不参加・全会一致制・制裁力不足）を教訓に国連を設立！国連の安保理は常任理事国5か国（米英仏ソ中）が拒否権を持つ大国一致の原則。ウィルソンの14か条が連盟の原点だ。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"第二次大戦後の米ソ対立「冷戦（れいせん）」の最初3文字を作れ！",
+        word:["れ","い","せ"], cols:2, rows:2,
+        hint_word:"冷戦（れいせん）",
+        explanation:"れいせん＝冷戦（Cold War）！1947〜1991年、米ソが直接衝突を避けながら軍拡・代理戦争・宇宙競争などで対立した。",
+        quiz:{ question:"冷戦（1947〜1991年）の特徴として最も正しいものはどれか？",
+          options:["米ソが直接衝突を避けながらイデオロギー対立・軍拡競争・代理戦争を展開した","アメリカとソ連が核戦争を行いヨーロッパが主な戦場となった","西側諸国のマーシャル・プランによりソ連が崩壊し即座に終結した","国連の調停でアメリカとソ連が平和条約を締結して終結した"],
+          correct:0, explanation:"冷戦は「熱くない戦争」！直接衝突はしないが：①軍拡競争（核兵器開発）②代理戦争（朝鮮・ベトナム・アフガン）③宇宙競争④イデオロギー対立（自由主義vs社会主義）。トルーマン・ドクトリン（1947年）が冷戦開始の宣言だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1914年に始まった大戦だ。サラエボでオーストリア皇太子が暗殺されたことがきっかけとなった。同盟国と連合国が対立し、塹壕戦・毒ガスなど新兵器が登場した。約1700万人が死亡し戦後パリ講和会議でヴェルサイユ条約が結ばれた。わたしは何？",
+        choices:["第一次世界大戦","第二次世界大戦","クリミア戦争","普仏戦争"], correctIdx:0,
+        explanation:"第一次世界大戦（1914〜1918年）！サラエボ事件が引き金。連合国（英仏露）vs同盟国（独墺オスマン）。戦後のヴェルサイユ体制がナチス台頭の遠因となった。",
+        quiz:{ question:"第一次世界大戦後のヴェルサイユ体制について最も正しいものはどれか？",
+          options:["ドイツに過酷な賠償を課しウィルソンの提唱で国際連盟が設立されたがアメリカは不参加","ドイツが完全に解体されアメリカ・イギリス・フランス・ソ連の4か国に分割統治された","国際連合が設立されドイツを含む全ての参戦国が安全保障理事会常任理事国となった","ドイツに対して軽微な処罰のみ与え早期に国際社会へ復帰させた寛大な条約だった"],
+          correct:0, explanation:"ヴェルサイユ条約（1919年）！ドイツへの過酷な制裁（巨額賠償・領土割譲・軍備制限）→ドイツの経済混乱→ナチズム台頭への遠因。アメリカは上院で条約批准を否決し国際連盟にも不参加！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1961年に東ドイツが建設し1989年に崩壊した壁だ。東西冷戦の象徴として知られ、ドイツの分断を具体的に示した。わたしの崩壊は冷戦終結の象徴となり、1990年のドイツ統一へとつながった。わたしは何？",
+        choices:["ベルリンの壁","万里の長城","ハドリアヌスの長城","38度線"], correctIdx:0,
+        explanation:"ベルリンの壁！1961年8月13日に建設開始。東独市民の西側逃亡を防ぐ目的。1989年11月9日崩壊→翌1990年東西ドイツ統一。",
+        quiz:{ question:"ベルリンの壁崩壊（1989年）とその後の世界の変化として最も正しいものはどれか？",
+          options:["冷戦終結の象徴となり1990年のドイツ統一・1991年のソ連崩壊へとつながった","壁崩壊後も東西ドイツは別国家として維持されEUにも別々に加盟した","壁崩壊がNATOの解体につながり欧州の安全保障体制が大きく変化した","壁崩壊でアメリカが唯一の超大国となったが中国・ロシアへの影響はなかった"],
+          correct:0, explanation:"ベルリンの壁崩壊（1989.11.9）→ドイツ統一（1990.10.3）→ソ連崩壊（1991.12.25）という冷戦終結の流れが最重要！ゴルバチョフのペレストロイカ・グラスノスチ政策が崩壊を加速させた。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"全部クリア！！世界史チャンピオン！！パチョ褒めて！！"},
+      {who:"pacho", text:"…よくやった。本当によくやった。ちょっとだけな。"},
+      {who:"akio", text:"またちょっとだけかよ！！でもうれしい！！！"}
+    ],
+    hint:"冷戦の始まり（トルーマン・ドクトリン1947年）とベルリンの壁崩壊（1989年）・ソ連崩壊（1991年）の流れを考えよ🦉"
+  }
+];
+
+// STATE
+let state = {
+  currentStage:0, score:0, lives:3, party:[],
+  hintUsed:false, timerInterval:null, timerLeft:30,
+  puzzleSolvedFlag:false, quizAnswered:false, currentPuzzleIndex:0,
+  sortAnswer:[], sortRemaining:[],
+  blankFilled:[], blankChoiceUsed:[],
+  slideTiles:[], slideCols:2, slideRows:2, slideMoves:0
+};
+
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function goMenu() { clearTimer(); showScreen('screen-opening'); }
+
+function showDialogSequence(dialogs, container, onComplete, scrollEl) {
+  if(!dialogs||!dialogs.length){onComplete();return;}
+  const sc=scrollEl||container; let idx=0;
+  function next(){
+    const d=dialogs[idx++];
+    container.appendChild(makeBubble(d.who,d.text));
+    setTimeout(()=>{sc.scrollTop=sc.scrollHeight;},50);
+    if(idx<dialogs.length){ const hint=document.createElement('div'); hint.className='dialog-tap-hint'; hint.textContent='タップで続く ▶'; hint.onclick=()=>{hint.remove();next();}; container.appendChild(hint); }
+    else { setTimeout(onComplete,600); }
+  }
+  next();
+}
+
+function startGame() {
+  state = { currentStage:0, score:0, lives:3, party:[], hintUsed:false,
+    timerInterval:null, timerLeft:30, puzzleSolvedFlag:false, quizAnswered:false, currentPuzzleIndex:0,
+    sortAnswer:[], sortRemaining:[], blankFilled:[], blankChoiceUsed:[],
+    slideTiles:[], slideCols:2, slideRows:2, slideMoves:0 };
+  showScreen('screen-game'); loadStage(0);
+}
+
+function loadStage(idx) {
+  clearTimer();
+  const s=STAGES[idx];
+  state.hintUsed=false; state.puzzleSolvedFlag=false; state.quizAnswered=false; state.currentPuzzleIndex=0;
+  document.getElementById('stage-label').textContent=`ステージ ${s.id}/${STAGES.length}  ${s.emoji} ${s.era}`;
+  updateLives(); updateScore(); updateParty();
+  document.getElementById('hint-btn').disabled=false;
+  const content=document.getElementById('game-content');
+  content.innerHTML=''; content.style.background=s.bgColor;
+  const phaseEl=document.createElement('div'); phaseEl.className='text-center';
+  phaseEl.innerHTML=`<span class="phase-label">📜 問題 1/4</span>`; content.appendChild(phaseEl);
+  const da=document.createElement('div'); da.className='dialog-area'; content.appendChild(da);
+  content.scrollTop=0;
+  showDialogSequence(s.openingDialogs, da, ()=>{
+    content.appendChild(makePuzzle(s.puzzles[0]));
+    setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+  }, content);
+}
+
+function makeBubble(who, text) {
+  const div=document.createElement('div');
+  div.className='dialog-bubble'+(who==='pacho'?' right':'');
+  let av;
+  if(who==='akio') av=`<img src="akio.svg" class="avatar-sm" alt="アキオ">`;
+  else if(who==='pacho') av=`<img src="pacho.svg" class="avatar-sm" alt="パチョ">`;
+  else av='🦉';
+  div.innerHTML=`<span class="dialog-avatar">${av}</span><div class="dialog-text">${text}</div>`;
+  return div;
+}
+
+function makePuzzle(p) {
+  const box=document.createElement('div'); box.className='puzzle-box'; box.id='puzzle-box';
+  switch(p.type){
+    case 'sort': box.appendChild(makeSortPuzzle(p)); break;
+    case 'riddle': box.appendChild(makeRiddlePuzzle(p)); break;
+    case 'slide': box.appendChild(makeSlidePuzzle(p)); break;
+  }
+  return box;
+}
+
+function pTitle(frag,html){const e=document.createElement('div');e.className='puzzle-title';e.innerHTML=html;frag.appendChild(e);}
+function pDesc(frag,txt){const e=document.createElement('div');e.className='puzzle-desc';e.textContent=txt;frag.appendChild(e);}
+
+function makeSortPuzzle(p) {
+  const frag=document.createDocumentFragment();
+  pTitle(frag,p.label); pDesc(frag,p.instruction);
+  if(p.question) pDesc(frag,p.question);
+  const area=document.createElement('div'); area.className='sort-area';
+  const shuffled=[...p.chars].sort(()=>Math.random()-0.5);
+  state.sortRemaining=[...shuffled]; state.sortAnswer=[];
+  const ansLabel=document.createElement('div'); ansLabel.className='sort-slot-label';
+  ansLabel.textContent=`↑ ここに並べよう（全${p.answer.length}文字）`; area.appendChild(ansLabel);
+  const ansSlots=document.createElement('div'); ansSlots.className='sort-slots'; ansSlots.id='sort-answer-slots';
+  ansSlots.addEventListener('click',e=>{const t=e.target.closest('.tile');if(!t)return;removeTileFromAnswer(parseInt(t.dataset.idx));renderSortPuzzle(p);});
+  area.appendChild(ansSlots);
+  const srcLabel=document.createElement('div'); srcLabel.className='sort-slot-label';
+  srcLabel.textContent='↓ タップして上に並べよう'; area.appendChild(srcLabel);
+  const srcSlots=document.createElement('div'); srcSlots.className='sort-slots'; srcSlots.id='sort-source-slots';
+  srcSlots.style.background='rgba(255,255,255,0.5)'; area.appendChild(srcSlots);
+  const checkBtn=document.createElement('button'); checkBtn.className='btn-check'; checkBtn.id='puzzle-check-btn';
+  checkBtn.textContent='答えを確認する'; checkBtn.disabled=true;
+  checkBtn.onclick=()=>checkSortAnswer(p); area.appendChild(checkBtn);
+  frag.appendChild(area);
+  setTimeout(()=>{
+    renderSortPuzzle(p);
+    document.getElementById('sort-source-slots')?.addEventListener('click',e=>{const t=e.target.closest('.tile');if(!t)return;addTileToAnswer(t.dataset.char,parseInt(t.dataset.idx));renderSortPuzzle(p);});
+  },10);
+  return frag;
+}
+function renderSortPuzzle(p){
+  const ans=document.getElementById('sort-answer-slots'),src=document.getElementById('sort-source-slots');
+  if(!ans||!src)return;
+  ans.innerHTML=''; state.sortAnswer.forEach((item,i)=>{const t=document.createElement('div');t.className='tile in-answer';t.dataset.char=item.char;t.dataset.idx=i;t.textContent=item.char;ans.appendChild(t);});
+  src.innerHTML=''; state.sortRemaining.forEach((char,i)=>{const t=document.createElement('div');t.className='tile';t.dataset.char=char;t.dataset.idx=i;t.textContent=char;src.appendChild(t);});
+  const btn=document.getElementById('puzzle-check-btn'); if(btn) btn.disabled=state.sortAnswer.length!==p.answer.length;
+}
+function addTileToAnswer(char,idx){state.sortAnswer.push({char,origIdx:idx});state.sortRemaining.splice(idx,1);}
+function removeTileFromAnswer(idx){const item=state.sortAnswer.splice(idx,1)[0];state.sortRemaining.push(item.char);}
+function checkSortAnswer(p){const user=state.sortAnswer.map(a=>a.char);if(p.answer.every((ch,i)=>user[i]===ch))puzzleSolved(p);else{shakeEl('sort-answer-slots');showToast('もう一度並べ直してみよう！');}}
+
+function makeRiddlePuzzle(p){
+  const frag=document.createDocumentFragment();
+  pTitle(frag,p.label); pDesc(frag,p.instruction);
+  const rb=document.createElement('div'); rb.className='riddle-text'; rb.textContent=p.riddle; frag.appendChild(rb);
+  const ca=document.createElement('div'); ca.className='riddle-choices';
+  const labels=['ア','イ','ウ','エ']; let done=false;
+  p.choices.forEach((ch,i)=>{const btn=document.createElement('button');btn.className='riddle-choice';btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(ch)}</span>`;
+    btn.onclick=()=>{if(done)return;if(i===p.correctIdx){done=true;btn.classList.add('correct');ca.querySelectorAll('.riddle-choice').forEach(b=>{b.disabled=true;});setTimeout(()=>puzzleSolved(p),600);}else{btn.classList.add('wrong-ans');showToast('ちがうよ！もう一度考えてみよう！');setTimeout(()=>btn.classList.remove('wrong-ans'),700);}};
+    ca.appendChild(btn);});
+  frag.appendChild(ca); return frag;
+}
+
+function makeSlidePuzzle(p){
+  const frag=document.createDocumentFragment();
+  pTitle(frag,p.label); pDesc(frag,p.instruction);
+  if(p.question) pDesc(frag,p.question);
+  const tWrap=document.createElement('div'); tWrap.style.cssText='text-align:center;margin-bottom:4px';
+  const tLabel=document.createElement('div'); tLabel.style.cssText='font-size:11px;color:var(--brown-mid);font-weight:bold;margin-bottom:6px'; tLabel.textContent='🎯 目標'; tWrap.appendChild(tLabel);
+  const tRow=document.createElement('div'); tRow.style.cssText='display:flex;gap:6px;align-items:center;justify-content:center';
+  p.word.forEach(ch=>{const t=document.createElement('div');t.style.cssText='width:40px;height:40px;background:rgba(39,174,96,0.15);border:2px solid var(--green-ok);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;color:var(--green-ok)';t.textContent=ch;tRow.appendChild(t);});
+  const eSlot=document.createElement('div'); eSlot.style.cssText='width:40px;height:40px;border:2px dashed var(--green-ok);border-radius:10px;opacity:0.4'; tRow.appendChild(eSlot);
+  tWrap.appendChild(tRow); frag.appendChild(tWrap);
+  state.slideCols=p.cols; state.slideRows=p.rows; state.slideMoves=0;
+  const solved=[...p.word,null]; let tiles=[...solved];
+  for(let i=0;i<40;i++){const ei=tiles.indexOf(null);const adj=slideAdj(ei,p.cols,p.rows);const r=adj[Math.floor(Math.random()*adj.length)];[tiles[ei],tiles[r]]=[tiles[r],tiles[ei]];}
+  if(tiles.every((v,i)=>v===solved[i])){[tiles[0],tiles[1]]=[tiles[1],tiles[0]];}
+  state.slideTiles=tiles;
+  const movesEl=document.createElement('div'); movesEl.className='slide-moves'; movesEl.id='slide-moves'; movesEl.textContent='タップでスライド ✨';
+  const gridEl=document.createElement('div'); gridEl.className=`slide-grid slide-grid-${p.cols}x${p.rows}`; gridEl.id='slide-grid';
+  gridEl.style.cssText=`display:grid;grid-template-columns:repeat(${p.cols},1fr);gap:6px;`;
+  frag.appendChild(movesEl);
+  const wrap=document.createElement('div'); wrap.style.cssText='display:flex;justify-content:center;margin:4px 0'; wrap.appendChild(gridEl); frag.appendChild(wrap);
+  setTimeout(()=>renderSlideGrid(p),10);
+  return frag;
+}
+function slideAdj(idx,cols,rows){const r=Math.floor(idx/cols),c=idx%cols,res=[];if(r>0)res.push(idx-cols);if(r<rows-1)res.push(idx+cols);if(c>0)res.push(idx-1);if(c<cols-1)res.push(idx+1);return res;}
+function renderSlideGrid(p){
+  const g=document.getElementById('slide-grid'); if(!g)return;
+  const solved=[...p.word,null]; g.innerHTML='';
+  state.slideTiles.forEach((ch,i)=>{
+    const tile=document.createElement('div');
+    if(ch===null){tile.className='slide-tile empty';}
+    else{const inPlace=ch===solved[i];tile.className='slide-tile filled'+(inPlace?' in-place':'');tile.textContent=ch;const ei=state.slideTiles.indexOf(null);const adj=slideAdj(ei,state.slideCols,state.slideRows);if(adj.includes(i)){tile.style.cursor='pointer';tile.onclick=()=>doSlideMove(i,p);}else{tile.style.cursor='default';tile.style.opacity='0.85';}}
+    g.appendChild(tile);});
+  const mv=document.getElementById('slide-moves'); if(mv&&state.slideMoves>0)mv.textContent=`${state.slideMoves}手`;
+}
+function doSlideMove(tileIdx,p){
+  const ei=state.slideTiles.indexOf(null);const adj=slideAdj(ei,state.slideCols,state.slideRows);
+  if(!adj.includes(tileIdx))return;
+  [state.slideTiles[ei],state.slideTiles[tileIdx]]=[state.slideTiles[tileIdx],state.slideTiles[ei]];
+  state.slideMoves++; renderSlideGrid(p);
+  const solved=[...p.word,null];
+  if(state.slideTiles.every((v,i)=>v===solved[i])){document.querySelectorAll('.slide-tile.filled').forEach(t=>t.classList.add('win-flash'));setTimeout(()=>puzzleSolved(p),800);}
+}
+
+const PUZZLES_PER_STAGE=4;
+function puzzleSolved(p){
+  if(state.puzzleSolvedFlag)return;
+  state.puzzleSolvedFlag=true;
+  const content=document.getElementById('game-content');
+  const pbs=document.querySelectorAll('.puzzle-box'); const pb=pbs[pbs.length-1];
+  if(pb){pb.style.borderColor='var(--green-ok)';pb.style.background='rgba(168,216,168,0.2)';}
+  content.appendChild(makeBubble('akio',`解けた！！${p.explanation||'正解だ！！'}`));
+  if(p.quiz){
+    state.quizAnswered=false;
+    setTimeout(()=>{
+      const pe=document.createElement('div'); pe.className='text-center';
+      pe.innerHTML=`<span class="phase-label">⚡ 問題に答えよう！</span>`; content.appendChild(pe);
+      content.appendChild(makePuzzleQuiz(p.quiz));
+      setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+      startTimer();
+    },800);
+  } else {
+    const gained=100; state.score+=gained; updateScore(); showScorePop(`+${gained}`);
+    advanceToNextPuzzle();
+  }
+}
+
+function makePuzzleQuiz(q){
+  const box=document.createElement('div'); box.className='quiz-box'; box.id='quiz-box';
+  const R=18,C=2*Math.PI*R;
+  box.innerHTML=`<div class="quiz-header"><div class="quiz-label">🎯 問題に答えよう！</div><div class="timer-ring"><svg class="timer-svg" viewBox="0 0 44 44"><circle class="timer-track" cx="22" cy="22" r="${R}"/><circle class="timer-progress" id="timer-progress" cx="22" cy="22" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="timer-text" id="timer-text">30</div></div></div><div class="quiz-question">${esc(q.question)}</div><div class="quiz-options" id="quiz-options"></div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="hint-btn" id="hint-btn-quiz" onclick="useHint()">🦉 ヒント</button></div><div class="hint-bubble" id="hint-bubble"></div>`;
+  const opts=box.querySelector('#quiz-options'),labels=['ア','イ','ウ','エ'];
+  q.options.forEach((opt,i)=>{const btn=document.createElement('button');btn.className='quiz-option';btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(opt)}</span>`;btn.onclick=()=>answerPuzzleQuiz(i,q,btn);opts.appendChild(btn);});
+  if(state.hintUsed)box.querySelector('#hint-btn-quiz').disabled=true;
+  return box;
+}
+
+function answerPuzzleQuiz(idx,q,btn){
+  if(state.quizAnswered)return; state.quizAnswered=true; clearTimer();
+  document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true);
+  const content=document.getElementById('game-content');
+  if(idx===q.correct){
+    btn.classList.add('correct');
+    const gained=100+Math.ceil(state.timerLeft*10); state.score+=gained; updateScore(); showScorePop(`+${gained}`);
+    content.appendChild(makeBubble('pacho',`正解！${q.explanation}`));
+    setTimeout(()=>advanceToNextPuzzle(),1800);
+  } else {
+    btn.classList.add('wrong-ans');
+    document.querySelectorAll('.quiz-option')[q.correct].classList.add('correct');
+    loseLife();
+    content.appendChild(makeBubble('pacho',`惜しい！正解は「${q.options[q.correct]}」。${q.explanation}`));
+    if(state.lives<=0)setTimeout(showGameOver,1800);else setTimeout(()=>advanceToNextPuzzle(),2500);
+  }
+}
+
+function advanceToNextPuzzle(){
+  const s=STAGES[state.currentStage],content=document.getElementById('game-content');
+  state.currentPuzzleIndex++;
+  if(state.currentPuzzleIndex<PUZZLES_PER_STAGE){
+    state.puzzleSolvedFlag=false; state.quizAnswered=false;
+    const pe=document.createElement('div'); pe.className='text-center';
+    pe.innerHTML=`<span class="phase-label">📜 問題 ${state.currentPuzzleIndex+1}/4</span>`; content.appendChild(pe);
+    content.appendChild(makePuzzle(s.puzzles[state.currentPuzzleIndex]));
+    setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+  } else {
+    if(!state.party.find(m=>m.name===s.member.name))state.party.push(s.member);
+    updateParty();
+    content.appendChild(makeBubble('pacho',`${s.member.name}が仲間になった！「${s.member.msg}」`));
+    setTimeout(()=>showStageClear(),2000);
+  }
+}
+
+function startTimer(){
+  clearTimer(); state.timerLeft=30;
+  const R=18,C=2*Math.PI*R;
+  state.timerInterval=setInterval(()=>{
+    state.timerLeft--;
+    const prog=document.getElementById('timer-progress'),text=document.getElementById('timer-text');
+    if(prog){prog.style.strokeDashoffset=C*(1-state.timerLeft/30);if(state.timerLeft<=10){prog.style.stroke='var(--red-life)';if(text)text.style.color='var(--red-life)';}}
+    if(text)text.textContent=state.timerLeft;
+    if(state.timerLeft<=0){clearTimer();timeUp();}
+  },1000);
+}
+function clearTimer(){if(state.timerInterval){clearInterval(state.timerInterval);state.timerInterval=null;}}
+function timeUp(){
+  if(state.quizAnswered)return; state.quizAnswered=true;
+  document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true); loseLife();
+  if(state.lives<=0)setTimeout(showGameOver,1500);else setTimeout(()=>advanceToNextPuzzle(),2000);
+}
+
+function showStageClear(){
+  const s=STAGES[state.currentStage];
+  document.getElementById('clear-emoji').textContent=s.emoji;
+  document.getElementById('clear-title').textContent=`${s.era}ステージ クリア！`;
+  document.getElementById('clear-score').textContent=`スコア：${state.score}`;
+  document.getElementById('clear-party').innerHTML=state.party.map(m=>`<span title="${m.name}">${m.emoji}</span>`).join('');
+  const bl=document.getElementById('clear-bubbles'); bl.innerHTML='';
+  const btn=document.getElementById('btn-clear-next'); btn.style.visibility='hidden';
+  if(state.currentStage>=STAGES.length-1){btn.textContent='結果を見る 🏆';btn.onclick=showResult;}
+  else{btn.textContent='次のステージへ →';btn.onclick=nextStage;}
+  showScreen('screen-clear');
+  showDialogSequence(s.clearDialogs,bl,()=>{btn.style.visibility='';},document.getElementById('screen-clear'));
+}
+function nextStage(){state.currentStage++;if(state.currentStage>=STAGES.length){showResult();return;}showScreen('screen-game');loadStage(state.currentStage);}
+function showGameOver(){document.getElementById('go-score').textContent=`スコア：${state.score}`;showScreen('screen-gameover');}
+function showResult(){document.getElementById('result-score').textContent=`最終スコア：${state.score}`;document.getElementById('result-party').innerHTML=state.party.map(m=>`<span title="${m.name}">${m.emoji}</span>`).join('');showScreen('screen-result');}
+function closeFeedback(){document.getElementById('feedback-overlay').classList.remove('visible');if(state.currentStage>=STAGES.length-1)showResult();else showStageClear();}
+
+function useHint(){
+  if(state.hintUsed)return; state.hintUsed=true; state.score=Math.floor(state.score/2); updateScore();
+  const hint=STAGES[state.currentStage].hint;
+  document.querySelectorAll('.hint-btn').forEach(b=>b.disabled=true);
+  const hb=document.getElementById('hint-bubble');if(hb){hb.textContent=`🦉 フクロウ博士：${hint}（ヒント使用でスコア半減！）`;hb.classList.add('visible');}
+  const d=document.createElement('div'); d.className='hint-bubble visible mt8'; d.textContent=`🦉 フクロウ博士：${hint}（ヒント使用でスコア半減！）`;
+  document.getElementById('game-content').appendChild(d); d.scrollIntoView({behavior:'smooth'});
+}
+
+function loseLife(){state.lives=Math.max(0,state.lives-1);updateLives();const el=document.getElementById('lives-display');el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),500);}
+function updateLives(){document.getElementById('lives-display').textContent='❤️'.repeat(state.lives)+'🖤'.repeat(3-state.lives);}
+function updateScore(){document.getElementById('score-display').textContent=state.score;}
+function updateParty(){const c=document.getElementById('party-members');c.innerHTML='';state.party.forEach(m=>{const s=document.createElement('span');s.className='party-member';s.textContent=m.emoji;s.title=`${m.name}：${m.msg}`;c.appendChild(s);});}
+function esc(str){const d=document.createElement('div');d.appendChild(document.createTextNode(str));return d.innerHTML;}
+function shakeEl(id){const el=document.getElementById(id);if(!el)return;el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),500);}
+function showToast(msg){const t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:white;font-size:13px;padding:8px 18px;border-radius:20px;z-index:300;animation:scoreFly 2s ease forwards;white-space:nowrap';document.body.appendChild(t);setTimeout(()=>t.remove(),2000);}
+function showScorePop(text){const p=document.createElement('div');p.className='score-pop';p.textContent=text;p.style.cssText='left:50%;top:40%;transform:translateX(-50%)';document.body.appendChild(p);setTimeout(()=>p.remove(),1200);}
+</script>
+</body>
+</html>

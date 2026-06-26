@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>アキオとパチョの謎解きトラベラー（日本地理編）</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --washi:#f0f8f0; --brown-dark:#1a3a1a; --brown-mid:#2d6a2d;
+  --brown-light:#5aaa5a; --brown-pale:#c8eac8; --red-life:#e74c3c;
+  --gold:#2e8b2e; --green-ok:#27ae60; --blue-hint:#2980b9;
+}
+html,body { height:100%; font-family:'Hiragino Maru Gothic ProN','Hiragino Sans','BIZ UDPGothic','Meiryo',sans-serif; background:var(--washi); color:var(--brown-dark); overflow:hidden; }
+body::before { content:''; position:fixed; inset:0; background:radial-gradient(ellipse at 15% 15%,rgba(90,170,90,0.12) 0%,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(40,140,40,0.10) 0%,transparent 55%); pointer-events:none; z-index:0; }
+.screen { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; z-index:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.screen.active { display:flex; }
+#screen-opening { justify-content:center; padding:20px 16px; gap:16px; }
+.opening-badge { display:inline-block; background:linear-gradient(135deg,#1a6b1a,#2e8b2e); color:#f0fff0; font-size:11px; font-weight:bold; letter-spacing:2px; padding:4px 16px; border-radius:20px; margin-bottom:10px; }
+.opening-title { font-size:22px; font-weight:bold; color:var(--brown-dark); line-height:1.3; text-shadow:1px 1px 0 rgba(255,255,255,0.8); }
+.opening-sub { font-size:13px; color:var(--brown-mid); margin-top:6px; }
+.deco-line { width:100%; max-width:400px; height:2px; background:linear-gradient(to right,transparent,#5aaa5a 20%,#2e8b2e 50%,#5aaa5a 80%,transparent); border-radius:1px; }
+.char-display { display:flex; justify-content:space-around; width:100%; max-width:360px; }
+.op-bubbles { width:100%; max-width:400px; display:flex; flex-direction:column; gap:10px; }
+.op-bubble { display:flex; gap:8px; align-items:flex-start; }
+.op-bubble.right { flex-direction:row-reverse; }
+.op-bubble-avatar { font-size:22px; flex-shrink:0; margin-top:4px; }
+.op-bubble-text { background:rgba(255,255,255,0.88); border:1.5px solid var(--brown-light); border-radius:14px; padding:8px 12px; font-size:13px; color:var(--brown-dark); line-height:1.55; max-width:calc(100% - 44px); box-shadow:0 2px 8px rgba(40,100,40,0.08); position:relative; }
+.op-bubble:not(.right) .op-bubble-text::before { content:''; position:absolute; left:-8px; top:10px; border:6px solid transparent; border-right-color:var(--brown-light); }
+.op-bubble:not(.right) .op-bubble-text::after { content:''; position:absolute; left:-6px; top:11px; border:5px solid transparent; border-right-color:rgba(255,255,255,0.88); }
+.op-bubble.right .op-bubble-text::before { content:''; position:absolute; right:-8px; top:10px; border:6px solid transparent; border-left-color:var(--brown-light); }
+.op-bubble.right .op-bubble-text::after { content:''; position:absolute; right:-6px; top:11px; border:5px solid transparent; border-left-color:rgba(255,255,255,0.88); }
+.stage-list { width:100%; max-width:400px; display:flex; flex-direction:column; gap:8px; }
+.stage-item { background:rgba(255,255,255,0.75); border:2px solid var(--brown-light); border-radius:14px; padding:12px 16px; display:flex; align-items:center; gap:12px; font-size:13px; }
+.stage-item .si-num { font-size:10px; font-weight:bold; color:var(--brown-mid); background:var(--brown-pale); border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.stage-item .si-emoji { font-size:18px; }
+.stage-item .si-era { font-weight:bold; }
+.btn-start { background:linear-gradient(135deg,#1a6b1a,#2e8b2e); color:#f0fff0; font-size:18px; font-weight:bold; padding:16px 48px; border:none; border-radius:30px; cursor:pointer; box-shadow:0 4px 16px rgba(26,107,26,0.35); letter-spacing:2px; transition:all 0.2s; width:100%; max-width:300px; }
+.btn-start:active { transform:scale(0.97); }
+#screen-game { padding:0; justify-content:flex-start; }
+.game-header { width:100%; background:linear-gradient(180deg,#0d420d 0%,#1a6b1a 100%); padding:10px 14px 8px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+.gh-top { display:flex; justify-content:space-between; align-items:center; }
+.gh-stage-info { color:#c8eac8; font-size:12px; font-weight:bold; }
+.gh-lives { display:flex; gap:4px; font-size:18px; }
+.gh-bottom { display:flex; justify-content:space-between; align-items:center; }
+.gh-score { color:#a8e0a8; font-size:13px; font-weight:bold; }
+.gh-score span { color:#90ee90; font-size:16px; }
+.party-bar { width:100%; background:rgba(26,107,26,0.12); border-bottom:1px solid var(--brown-light); padding:6px 14px; display:flex; align-items:center; gap:6px; flex-shrink:0; min-height:40px; }
+.party-label { font-size:10px; color:var(--brown-mid); font-weight:bold; flex-shrink:0; }
+.party-members { display:flex; gap:4px; flex-wrap:wrap; }
+.party-member { font-size:22px; animation:memberJoin 0.4s ease-out; }
+@keyframes memberJoin { from{transform:scale(0) rotate(-180deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+.game-content { flex:1; width:100%; padding:12px 14px 16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.dialog-area { display:flex; flex-direction:column; gap:8px; }
+.dialog-bubble { display:flex; gap:8px; align-items:flex-start; }
+.dialog-bubble.right { flex-direction:row-reverse; }
+.dialog-avatar { font-size:20px; flex-shrink:0; margin-top:4px; }
+.dialog-text { background:rgba(255,255,255,0.88); border:1.5px solid var(--brown-light); border-radius:12px; padding:7px 11px; font-size:13px; line-height:1.5; max-width:calc(100% - 40px); box-shadow:0 2px 6px rgba(40,100,40,0.07); position:relative; }
+.dialog-bubble:not(.right) .dialog-text::before { content:''; position:absolute; left:-7px; top:9px; border:5px solid transparent; border-right-color:var(--brown-light); }
+.dialog-bubble:not(.right) .dialog-text::after { content:''; position:absolute; left:-5px; top:10px; border:4px solid transparent; border-right-color:rgba(255,255,255,0.88); }
+.dialog-bubble.right .dialog-text::before { content:''; position:absolute; right:-7px; top:9px; border:5px solid transparent; border-left-color:var(--brown-light); }
+.dialog-bubble.right .dialog-text::after { content:''; position:absolute; right:-5px; top:10px; border:4px solid transparent; border-left-color:rgba(255,255,255,0.88); }
+.puzzle-box { background:rgba(255,255,255,0.82); border:2px solid var(--brown-light); border-radius:18px; padding:14px; box-shadow:0 3px 12px rgba(40,100,40,0.1); }
+.puzzle-title { font-size:12px; font-weight:bold; color:var(--brown-mid); letter-spacing:1px; margin-bottom:8px; }
+.puzzle-desc { font-size:13px; color:var(--brown-dark); line-height:1.6; margin-bottom:8px; }
+.sort-area { display:flex; flex-direction:column; gap:10px; }
+.sort-slot-label { font-size:10px; color:var(--brown-mid); text-align:center; margin-bottom:4px; }
+.sort-slots { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; min-height:44px; background:rgba(90,170,90,0.10); border:1.5px dashed var(--brown-light); border-radius:10px; padding:6px; align-items:center; }
+.tile { background:linear-gradient(135deg,#f0fff0,#d8f0d8); border:2px solid var(--brown-light); border-radius:10px; min-width:40px; height:40px; padding:0 6px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.15s; box-shadow:0 2px 6px rgba(40,100,40,0.15); user-select:none; color:var(--brown-dark); }
+.tile:active { transform:scale(0.9); }
+.tile.in-answer { background:linear-gradient(135deg,#d0f0d0,#a8e0a8); border-color:var(--gold); }
+.riddle-text { background:rgba(240,255,240,0.95); border:2px solid var(--brown-light); border-radius:14px; padding:14px 16px; font-size:14px; line-height:1.75; color:var(--brown-dark); text-align:center; font-style:italic; margin-bottom:8px; }
+.riddle-choices { display:flex; flex-direction:column; gap:8px; }
+.riddle-choice { background:rgba(255,255,255,0.9); border:2px solid var(--brown-light); border-radius:12px; padding:11px 14px; font-size:14px; font-weight:bold; cursor:pointer; color:var(--brown-dark); display:flex; align-items:center; gap:10px; text-align:left; width:100%; }
+.riddle-choice:active { transform:scale(0.98); }
+.riddle-choice:disabled { cursor:default; }
+.slide-grid { display:grid; gap:6px; }
+.slide-grid-2x2 { grid-template-columns:repeat(2,1fr); }
+.slide-tile { width:80px; height:80px; font-size:28px; font-weight:bold; display:flex; align-items:center; justify-content:center; border-radius:14px; cursor:pointer; user-select:none; transition:transform 0.1s, background 0.2s; }
+.slide-tile.filled { background:linear-gradient(135deg,#f0fff0,#d8f0d8); border:2.5px solid var(--brown-light); box-shadow:0 3px 10px rgba(40,100,40,0.18); color:var(--brown-dark); }
+.slide-tile.filled:active { transform:scale(0.93); }
+.slide-tile.empty { background:rgba(90,170,90,0.08); border:2px dashed rgba(90,170,90,0.35); cursor:default; }
+.slide-tile.in-place { border-color:var(--green-ok); background:linear-gradient(135deg,#eafaf1,#d5f5e3); }
+.slide-tile.win-flash { background:linear-gradient(135deg,#d4edda,#a8d8a8); border-color:var(--green-ok); animation:correctPop 0.4s ease; }
+.slide-moves { font-size:12px; color:var(--brown-mid); text-align:center; }
+.opt-label { width:26px; height:26px; border-radius:50%; background:var(--brown-pale); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color:var(--brown-mid); flex-shrink:0; }
+.correct { background:linear-gradient(135deg,#d4edda,#a8d8a8) !important; border-color:var(--green-ok) !important; }
+.correct .opt-label { background:var(--green-ok); color:white; }
+.wrong-ans { background:linear-gradient(135deg,#fde8e8,#f5b8b8) !important; border-color:var(--red-life) !important; }
+.wrong-ans .opt-label { background:var(--red-life); color:white; }
+.quiz-box { background:rgba(255,255,255,0.88); border:2px solid var(--gold); border-radius:18px; padding:14px; box-shadow:0 3px 14px rgba(40,100,40,0.12); animation:slideUp 0.35s ease; }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.quiz-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.quiz-label { font-size:11px; font-weight:bold; color:var(--gold); background:rgba(46,139,46,0.1); padding:3px 10px; border-radius:12px; }
+.timer-ring { position:relative; width:44px; height:44px; flex-shrink:0; }
+.timer-svg { transform:rotate(-90deg); width:44px; height:44px; }
+.timer-track { fill:none; stroke:rgba(46,139,46,0.2); stroke-width:4; }
+.timer-progress { fill:none; stroke:var(--gold); stroke-width:4; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-text { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:bold; color:var(--gold); }
+.quiz-question { font-size:15px; font-weight:bold; color:var(--brown-dark); line-height:1.6; margin-bottom:12px; background:rgba(90,170,90,0.10); border-radius:10px; padding:10px 12px; }
+.quiz-options { display:flex; flex-direction:column; gap:8px; }
+.quiz-option { background:rgba(255,255,255,0.9); border:2px solid var(--brown-light); border-radius:12px; padding:11px 14px; font-size:14px; font-weight:bold; cursor:pointer; color:var(--brown-dark); text-align:left; display:flex; align-items:center; gap:10px; line-height:1.4; }
+.quiz-option:active:not(:disabled) { transform:scale(0.98); }
+.quiz-option:disabled { cursor:default; }
+.hint-btn { background:linear-gradient(135deg,#1a5276,var(--blue-hint)); color:white; font-size:13px; font-weight:bold; padding:8px 16px; border:none; border-radius:20px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.hint-btn:disabled { opacity:0.4; pointer-events:none; }
+.hint-bubble { background:rgba(234,242,251,0.95); border:2px solid var(--blue-hint); border-radius:14px; padding:10px 14px; font-size:13px; color:#1a3a5c; line-height:1.5; display:none; animation:slideUp 0.3s ease; }
+.hint-bubble.visible { display:block; }
+.btn-next { background:linear-gradient(135deg,#1a6b1a,var(--gold)); color:#f0fff0; font-size:16px; font-weight:bold; padding:13px 36px; border:none; border-radius:26px; cursor:pointer; box-shadow:0 4px 14px rgba(26,107,26,0.3); width:100%; }
+.btn-next:active { transform:scale(0.97); }
+.special-screen { width:100%; max-width:400px; padding:24px 16px 40px; display:flex; flex-direction:column; align-items:center; gap:16px; margin:0 auto; }
+.special-emoji { font-size:72px; text-align:center; }
+.special-title { font-size:26px; font-weight:bold; color:var(--brown-dark); text-align:center; line-height:1.3; }
+.special-sub { font-size:14px; color:var(--brown-mid); text-align:center; }
+.special-score { font-size:36px; font-weight:bold; color:var(--gold); text-align:center; }
+.party-display { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:36px; }
+.btn-menu { background:rgba(255,255,255,0.8); border:2px solid var(--brown-light); color:var(--brown-dark); font-size:15px; font-weight:bold; padding:12px 32px; border-radius:24px; cursor:pointer; width:100%; max-width:280px; text-align:center; }
+.mt8 { margin-top:8px; }
+.text-center { text-align:center; }
+.phase-label { font-size:11px; font-weight:bold; color:var(--brown-mid); background:var(--brown-pale); padding:3px 12px; border-radius:12px; display:inline-block; margin-bottom:6px; }
+@keyframes correctPop { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+.shake { animation:shake 0.4s ease; }
+.score-pop { position:fixed; font-size:20px; font-weight:bold; color:var(--gold); pointer-events:none; z-index:200; animation:scoreFly 1.2s ease forwards; }
+@keyframes scoreFly { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.3)} }
+.dialog-tap-hint { text-align:center; font-size:11px; color:var(--brown-mid); padding:6px 0; cursor:pointer; animation:pulse 1.2s ease-in-out infinite; user-select:none; -webkit-user-select:none; }
+@keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:1} }
+.char-big-img { width:80px; height:80px; border-radius:50%; object-fit:cover; object-position:top center; border:3px solid var(--brown-light); filter:drop-shadow(2px 3px 6px rgba(0,0,0,0.2)); animation:charFloat 3s ease-in-out infinite; flex-shrink:0; }
+.char-big-img:last-child { animation-delay:1.5s; }
+@keyframes charFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.avatar-sm { width:40px; height:40px; border-radius:50%; object-fit:cover; object-position:top center; border:2px solid var(--brown-light); flex-shrink:0; background:var(--brown-pale); }
+</style>
+</head>
+<body>
+
+<div id="screen-opening" class="screen active">
+  <div class="special-screen" style="padding-top:20px">
+    <div style="text-align:center">
+      <div class="opening-badge">知育謎解きRPG・日本地理編</div>
+      <div class="opening-title">アキオとパチョの<br>謎解きトラベラー</div>
+      <div class="opening-sub">地形から環境まで日本の地理を解け！</div>
+    </div>
+    <div class="char-display" style="display:flex;justify-content:space-around;width:100%;max-width:360px">
+      <img src="akio.svg" class="char-big-img" alt="アキオ">
+      <img src="pacho.svg" class="char-big-img" alt="パチョ">
+    </div>
+    <div class="deco-line"></div>
+    <div class="op-bubbles">
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">パチョ！日本地理！富士山！信濃川！太平洋ベルト！全部出る！！</div></div>
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">落ち着け。パズルを解いてクイズに正解すれば仲間がつく。まず聞け。</div></div>
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">ライフは❤️❤️❤️！ヒントは🦉フクロウ博士！でもスコアが半分になるぞ！！</div></div>
+    </div>
+    <div class="stage-list">
+      <div class="stage-item"><div class="si-num">1</div><div class="si-emoji">🗻</div><div class="si-era">日本の地形</div></div>
+      <div class="stage-item"><div class="si-num">2</div><div class="si-emoji">🌦️</div><div class="si-era">日本の気候</div></div>
+      <div class="stage-item"><div class="si-num">3</div><div class="si-emoji">🌾</div><div class="si-era">農業</div></div>
+      <div class="stage-item"><div class="si-num">4</div><div class="si-emoji">🐟</div><div class="si-era">漁業・林業</div></div>
+      <div class="stage-item"><div class="si-num">5</div><div class="si-emoji">⚙️</div><div class="si-era">工業・産業</div></div>
+      <div class="stage-item"><div class="si-num">6</div><div class="si-emoji">🏙️</div><div class="si-era">環境・都市問題</div></div>
+    </div>
+    <button class="btn-start" onclick="startGame()">冒険を始める！</button>
+    <a href="quiz-genre.html" style="font-size:13px;color:var(--brown-mid);text-decoration:none;">← ジャンル選択に戻る</a>
+  </div>
+</div>
+
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="gh-top">
+      <div class="gh-stage-info" id="stage-label">ステージ 1 / 6</div>
+      <div class="gh-lives" id="lives-display">❤️❤️❤️</div>
+    </div>
+    <div class="gh-bottom">
+      <div class="gh-score">スコア <span id="score-display">0</span></div>
+      <button class="hint-btn" id="hint-btn" onclick="useHint()">🦉 ヒント</button>
+    </div>
+  </div>
+  <div class="party-bar"><div class="party-label">仲間：</div><div class="party-members" id="party-members"></div></div>
+  <div class="game-content" id="game-content"></div>
+</div>
+
+<div id="screen-clear" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji" id="clear-emoji">🎉</div>
+    <div class="special-title" id="clear-title">ステージクリア！</div>
+    <div class="op-bubbles" id="clear-bubbles" style="width:100%;max-width:380px"></div>
+    <div class="party-display" id="clear-party"></div>
+    <div class="special-score" id="clear-score"></div>
+    <button class="btn-next" id="btn-clear-next">次のステージへ →</button>
+    <button class="btn-menu" onclick="goMenu()">← タイトルに戻る</button>
+  </div>
+</div>
+
+<div id="screen-gameover" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji">💀</div>
+    <div class="special-title">ゲームオーバー</div>
+    <div class="op-bubbles" style="width:100%;max-width:380px">
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">…日本地理は奥が深い。また挑め。</div></div>
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">富士山よ！もう一度登らせてくれ！！</div></div>
+    </div>
+    <div class="special-score" id="go-score"></div>
+    <button class="btn-start" onclick="startGame()">もう一度挑戦！</button>
+    <button class="btn-menu" onclick="goMenu()">← タイトルに戻る</button>
+  </div>
+</div>
+
+<div id="screen-result" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji">🏆</div>
+    <div class="special-title">全ステージ制覇！</div>
+    <div class="op-bubbles" style="width:100%;max-width:380px">
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">やった！日本地理の謎を全部解いたぞ！！！</div></div>
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">素直に認める。よくやった。…ちょっとだけな。</div></div>
+    </div>
+    <div class="special-sub">集めた仲間たち</div>
+    <div class="party-display" id="result-party"></div>
+    <div class="special-score" id="result-score"></div>
+    <button class="btn-start" onclick="startGame()">もう一度遊ぶ</button>
+    <button class="btn-menu" onclick="goMenu()">← ジャンル選択に戻る</button>
+  </div>
+</div>
+
+<script>
+const STAGES = [
+  {
+    id:1, era:"日本の地形", emoji:"🗻", bgColor:"rgba(60,140,60,0.06)",
+    member:{ emoji:"🗻", name:"山岳ガイド", msg:"日本の山と川を案内しよう！" },
+    openingDialogs:[
+      {who:"akio", text:"地形！！富士山！！フォッサマグナ！！リアス式海岸！！"},
+      {who:"pacho", text:"落ち着け。日本最長の川を言えるか？"},
+      {who:"akio", text:"信濃川！！長野から新潟へ！！367km！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"日本最長の河川「□□□川（しなのがわ）」の最初3文字を並べよ！",
+        chars:["し","な","の"], answer:["し","な","の"],
+        displayAnswer:"信濃（しなの）川",
+        explanation:"信濃川！長野県から新潟県へ流れる全長367kmの日本最長の川。流域面積最大は利根川。この2つはセットで覚えよう。",
+        quiz:{ question:"日本の主要河川に関して最も正しいものはどれか？",
+          options:["信濃川が日本最長（367km）、利根川が流域面積最大（関東平野）","利根川が日本最長、信濃川が流域面積最大","最上川が日本最長で、石狩川が流域面積最大","木曽川が日本最長で、天竜川が流域面積最大"],
+          correct:0, explanation:"信濃川＝日本最長、利根川＝流域面積最大がセット！利根川は「坂東太郎」とも呼ばれ関東平野を流れる。最上川は山形の急流（松尾芭蕉の俳句でも有名）。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"日本最高峰・標高3776m・静岡と山梨の境にある山「富士（ふじさん）」の最初3文字を作れ！",
+        word:["ふ","じ","さ"], cols:2, rows:2,
+        hint_word:"富士（ふじ）山",
+        explanation:"ふじさ＝富士山！標高3776m。日本の象徴として世界文化遺産に登録（2013年）。成層火山の典型例で「休火山」ではなく「活火山」に分類されている。",
+        quiz:{ question:"日本アルプスの正しい説明はどれか？",
+          options:["飛騨山脈（北アルプス）・木曽山脈（中央アルプス）・赤石山脈（南アルプス）の3列が並ぶ","日高山脈・大雪山・十勝岳の北海道3山脈が日本アルプスと呼ばれる","奥羽山脈・越後山脈・関東山地が日本アルプスの3山脈","紀伊山地・中国山地・四国山地が日本アルプスの3山脈"],
+          correct:0, explanation:"日本アルプスは3列！北アルプス（飛騨山脈）・中央アルプス（木曽山脈）・南アルプス（赤石山脈）。北アルプスには槍ヶ岳・穂高岳、南アルプスには北岳（富士に次ぐ2位）がある。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは日本列島を地質学的に東西に分断する大地溝帯だ。新潟県糸魚川から静岡県にかけての「糸魚川・静岡構造線」が西縁をなし、東日本と西日本を地質的に分ける。わたしは何？",
+        choices:["フォッサマグナ","中央構造線","糸魚川断層","三陸沖構造線"], correctIdx:0,
+        explanation:"フォッサマグナ！ラテン語で「大きな溝」。ドイツ人地質学者ナウマンが命名。西縁は糸魚川・静岡構造線で明確だが東縁は諸説ある。",
+        quiz:{ question:"フォッサマグナと中央構造線の説明として最も正しいものはどれか？",
+          options:["フォッサマグナは東西方向の大地溝帯、中央構造線は東北東〜西南西に走る断層線で両者が日本の地質を規定する","フォッサマグナと中央構造線は同じものを指す異なる名称","中央構造線は南北方向に日本列島を分断し北海道から九州まで続く","フォッサマグナは海底地形で中央構造線は陸上地形の用語"],
+          correct:0, explanation:"フォッサマグナ（東西方向・大地溝帯）と中央構造線（東北東〜西南西方向の大断層）は別物！中央構造線は関東から九州まで連なり内帯と外帯を分ける。両方が日本の地体構造を理解する鍵だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは山地が沈降（または海面上昇）することで形成された複雑な海岸地形だ。小さな湾と岬が交互に連続し、湾奥は波が穏やかで水深が深い。三陸海岸南部・志摩半島・若狭湾などで見られる。わたしは何海岸？",
+        choices:["リアス式海岸","砂浜海岸（砂丘海岸）","砂嘴・砂州","隆起海岸"], correctIdx:0,
+        explanation:"リアス式海岸！スペインのガリシア地方（リアス）が語源。湾が深く波静かで養殖漁業（カキ・ホタテ・わかめ）に適する一方、津波被害を受けやすい。",
+        quiz:{ question:"リアス式海岸の特徴と問題点として最も正しいものはどれか？",
+          options:["湾が深く波静かで養殖漁業に適するが、湾奥に津波が集中して被害が大きくなりやすい","砂浜が続き海水浴・観光に適しているが、養殖漁業には全く不向き","波が荒く漁業・観光の両面で利用価値がほとんどない地形","河川の堆積作用で形成されるため農地利用に最も適した海岸地形"],
+          correct:0, explanation:"リアス式海岸は養殖に最適！三陸海岸は東日本大震災（2011年）でリアス式地形が津波を増幅させ甚大な被害をもたらした。防潮堤の設置など津波対策が重要な課題だ。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"山岳ガイド仲間になった！！富士山頂連れてって！！"},
+      {who:"pacho", text:"富士山は登山シーズンが決まってる。次は気候だ。"}
+    ],
+    hint:"信濃川（最長）と利根川（流域面積最大）のペア、フォッサマグナ（大地溝帯）の場所を考えよ🦉"
+  },
+  {
+    id:2, era:"日本の気候", emoji:"🌦️", bgColor:"rgba(40,100,160,0.06)",
+    member:{ emoji:"🌦️", name:"気象予報士", msg:"天気と気候を読み解こう！" },
+    openingDialogs:[
+      {who:"akio", text:"気候！！梅雨！！台風！！やませ！！日本の気候複雑すぎ！！"},
+      {who:"pacho", text:"日本海側と太平洋側の冬の違いを言えるか？"},
+      {who:"akio", text:"日本海側は雪！太平洋側は晴れで乾燥！！季節風のせい！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"毎年夏〜秋に日本に接近・上陸し豪雨・暴風をもたらす熱帯低気圧「□□□□」を並べよ！",
+        chars:["た","い","ふ","う"], answer:["た","い","ふ","う"],
+        displayAnswer:"台風（たいふう）",
+        explanation:"台風！北西太平洋で発生した最大風速17.2m/s以上の熱帯低気圧。日本には主に8〜10月に上陸。暖かい海水が発達のエネルギー源だ。",
+        quiz:{ question:"台風の発生・性質に関して最も正しいものはどれか？",
+          options:["熱帯の温かい海上で発生した熱帯低気圧が発達したもので日本には8〜10月に多く上陸する","北極の冷たい海上で発生した低気圧が発達したもので1〜2月に日本を直撃する","偏西風帯で発生する温帯低気圧と同じもので春と秋に多い","モンスーン（季節風）が引き起こす現象で季節風帯に特有の気象現象"],
+          correct:0, explanation:"台風は熱帯の暖かい海上で発生！水温27°C以上が目安。太平洋・フィリピン海で発生し北上する。上陸すると水蒸気の供給が絶たれ衰弱。大西洋のハリケーン・インド洋のサイクロンと同じ現象だ。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"東北地方の太平洋側に夏に吹く冷湿な北東風で冷害の原因「やませ」を作れ！",
+        word:["や","ま","せ"], cols:2, rows:2,
+        hint_word:"やませ（山背）",
+        explanation:"やませ＝山背！オホーツク海高気圧から吹く冷湿な北東風。夏の東北太平洋側で日照不足・低温をもたらし冷害を引き起こす。岩手・宮城の太平洋側で影響大。",
+        quiz:{ question:"やませが東北地方の農業に与える影響として最も正しいものはどれか？",
+          options:["夏の日照不足・低温をもたらし稲作の冷害・凶作を引き起こす（天明・天保の飢饉もやませが一因）","春に吹く温暖な風で桜の開花を促し稲作の生育を助ける","冬の季節風で日本海側に大雪をもたらすが太平洋側は乾燥する","台風と同時に発生する強風で稲の倒伏を引き起こす秋の現象"],
+          correct:0, explanation:"やませは稲作の天敵！東北の太平洋側はやませの影響で冷夏になりやすく歴史的に何度も飢饉が起きた。日本海側（奥羽山脈が壁）はやませの影響が少なく稲作に適す。山形盆地・秋田平野が良米産地な理由だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは冬の日本の気候の特徴だ。シベリアから北西の季節風が吹き、日本海を渡る際に大量の水蒸気を含み、日本海側の山地にぶつかって豪雪をもたらす。新潟・秋田・山形・石川が全国有数の豪雪地帯になる理由だ。わたしはどんな現象？",
+        choices:["冬の北西季節風と日本海側の豪雪","夏の南東季節風と太平洋側の多雨","梅雨前線による長雨","台風による秋の大雨"], correctIdx:0,
+        explanation:"冬の季節風が日本海上で水蒸気を含み、脊梁山脈にぶつかって日本海側に雪、太平洋側に乾燥した晴天という対照的な気候を生む。",
+        quiz:{ question:"日本海側と太平洋側の気候の対比として最も正しいものはどれか？",
+          options:["日本海側は冬に豪雪・夏は晴天、太平洋側は冬に晴天乾燥・夏は多雨という対照的な気候","日本海側は一年中多雨・太平洋側は一年中少雨という単純な差","日本海側は夏に豪雪・太平洋側は冬に多雨で全く逆の特徴","北西季節風は太平洋側に雪・日本海側は晴天という誤解が多い"],
+          correct:0, explanation:"冬：北西季節風→日本海側（雪多い）/ 太平洋側（乾燥・晴れ）。夏：南東季節風→太平洋側（多雨）/ 日本海側（フェーン現象で高温乾燥）。この対比が日本の気候の最重要ポイントだ！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは瀬戸内海沿岸に見られる特有の気候だ。中国山地と四国山地に挟まれて夏・冬ともに季節風の影響を受けにくく、年間降水量が1000mm前後と少なく晴れの日が多い温暖な気候だ。わたしは何気候？",
+        choices:["瀬戸内の気候（少雨・温暖）","太平洋側の気候（夏多雨）","内陸性気候（寒暖差大）","南西諸島の気候（亜熱帯）"], correctIdx:0,
+        explanation:"瀬戸内気候は少雨温暖！中四国の山地が季節風をさえぎる。少雨のため農業用水に溜め池を多く造った。温暖な気候でみかん・ピーマン・オリーブ（小豆島）の栽培が盛ん。",
+        quiz:{ question:"瀬戸内気候が農業に与える特徴的な影響として最も正しいものはどれか？",
+          options:["年間降水量が少ないため溜め池が多く造られ、温暖な気候でみかん・ピーマン・オリーブ栽培が盛ん","年間降水量が多いため水田農業が最も発達し米の生産量が全国一","夏の降水量が多くキャベツ・レタスなど高冷地野菜の栽培が盛ん","冬の積雪が多く水資源が豊富なためスキー場と農業が共存している"],
+          correct:0, explanation:"瀬戸内の少雨→溜め池！香川県には全国最多の溜め池がある。温暖な気候→みかん（愛媛が全国上位）・ピーマン（高知と並ぶ）・オリーブ（小豆島が国内ほぼ唯一の産地）。気候と農業の結びつきが重要！" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"気象予報士仲間になった！！明日の天気教えて！！"},
+      {who:"pacho", text:"台風が来る。傘を持て。次は農業だ。"}
+    ],
+    hint:"冬の季節風→日本海側に雪・太平洋側に晴天。やませ→東北太平洋側の冷害。瀬戸内→少雨温暖🦉"
+  },
+  {
+    id:3, era:"農業", emoji:"🌾", bgColor:"rgba(180,140,40,0.07)",
+    member:{ emoji:"🌾", name:"農家", msg:"大地の恵みを届けよう！" },
+    openingDialogs:[
+      {who:"akio", text:"農業！！稲作！！促成栽培！！近郊農業！！全部出る！！"},
+      {who:"pacho", text:"促成栽培と抑制栽培の違いを言えるか？"},
+      {who:"akio", text:"促成は早く出荷！抑制は遅く出荷！！高知と群馬が典型！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"日本農業の中心・弥生時代から続く穀物栽培「□□□□（いなさく）」を並べよ！",
+        chars:["い","な","さ","く"], answer:["い","な","さ","く"],
+        displayAnswer:"稲作（いなさく）",
+        explanation:"稲作！日本の農業生産の中心。新潟（コシヒカリ）・秋田（あきたこまち）・北海道（ゆめぴりか）などブランド米が有名。作付面積は減反政策後に大幅に減少した。",
+        quiz:{ question:"日本の稲作の地域的特徴として最も正しいものはどれか？",
+          options:["東北・北陸が主産地で新潟・秋田・北海道が上位を占め、ブランド米競争が激しい","九州が日本最大の稲作地帯で鹿児島・熊本が生産量1・2位を独占している","北海道は寒冷すぎて稲作は不可能であり、稲作は東北以南に限定される","稲作面積は近年急増しており、日本の食糧自給率はほぼ100%を達成している"],
+          correct:0, explanation:"稲作の主産地：新潟・北海道・秋田・山形・宮城が上位！北海道は品種改良（寒冷地向け品種）で稲作が可能になった。カロリーベースの食糧自給率は約38%（2023年）で米だけでなく小麦・大豆の輸入が大きな課題だ。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"温暖な気候でビニールハウスを使い野菜を早期出荷する促成栽培の代表地「高知（こうち）県」の最初3文字を作れ！",
+        word:["こ","う","ち"], cols:2, rows:2,
+        hint_word:"高知（こうち）県",
+        explanation:"こうち＝高知県！ナス・ピーマン・しょうがなど施設園芸（ビニールハウス）を使った促成栽培が盛ん。温暖な気候を活かして冬から春にかけて出荷し高い価格を得る。",
+        quiz:{ question:"促成栽培と抑制栽培の違いとして最も正しいものはどれか？",
+          options:["促成栽培は温暖地でビニールハウスを使い早期出荷、抑制栽培は高冷地で生育を遅らせ夏に出荷","促成栽培は農薬を使わない有機農業、抑制栽培は農薬を多用する慣行農業のこと","促成栽培は大消費地近郊、抑制栽培は山間地の農業の別名","促成・抑制はどちらも同じ農業手法で使用地域が違うだけ"],
+          correct:0, explanation:"促成栽培：高知・宮崎（温暖地）でビニールハウスを使い冬〜春に出荷。抑制栽培：長野・群馬（高冷地）で夏の涼しさを活かしキャベツ・レタスを夏〜秋に出荷。どちらも旬でない時期に出荷し高値を狙う戦略だ！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは大消費地（都市）の周辺で行われる農業だ。輸送時間が短く新鮮な野菜・果物・花きを生産して都市向けに出荷する。東京近郊（千葉・埼玉・神奈川）・大阪近郊などで発達している。わたしは何農業？",
+        choices:["近郊農業","促成栽培","抑制栽培（高冷地農業）","焼き畑農業"], correctIdx:0,
+        explanation:"近郊農業！大都市の周辺で行われる農業。鮮度が命の葉物野菜・花きなどが中心。千葉（ねぎ・ほうれん草）・埼玉（ブロッコリー）・神奈川（キャベツ）が代表。",
+        quiz:{ question:"近郊農業と輸送園芸農業（遠郊農業）の違いとして最も正しいものはどれか？",
+          options:["近郊農業は大都市周辺で新鮮さを武器に、輸送園芸農業は遠隔地で促成・抑制で旬外しを武器にする","近郊農業は山間部、遠郊農業は沿岸部で行われる地形的な違いだけ","近郊農業は有機農業、遠郊農業は化学肥料を使う農業のこと","両者は同義で大都市郊外の農業を指す用語の違いにすぎない"],
+          correct:0, explanation:"近郊農業（都市に近い＝新鮮さ）vs 輸送園芸農業（遠隔地・高知・宮崎など＝促成栽培で季節外れに出荷）。二つとも「都市市場向け農業」だが戦略が全く逆！近年は輸送技術の向上で遠隔地でも鮮度を保てるようになった。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは戦後日本で長く続いた農業政策だ。米の生産過剰と米価維持のため稲作の作付け面積を削減し、大豆・野菜などへの転作を奨励した。1970年から本格実施され2018年に廃止された。わたしは何政策？",
+        choices:["減反政策（生産調整）","農地改革（農地解放）","食糧管理制度","農業基本法（農振法）"], correctIdx:0,
+        explanation:"減反政策！1970〜2018年。米の供給過剰による価格下落を防ぐため。廃止後は生産者が自由に作付けを決められるようになった。",
+        quiz:{ question:"戦後日本の農業政策の流れとして最も正しいものはどれか？",
+          options:["農地改革（1945〜50年）で自作農が増加し、減反政策（1970〜2018年）で稲作面積が大幅に減少した","戦後一貫して農業拡大政策をとり稲作面積は増加し続けている","農地改革で農業が集団化し巨大農場が全国に建設された","減反政策は現在も継続中で農家は自由に作付けできない"],
+          correct:0, explanation:"戦後農業史：農地改革（GHQの指令→地主から小作農に土地解放）→高度成長期に農村から工業へ人口移動→食管制度・減反政策→WTO・TPP→減反廃止（2018年）→農業の大規模化・輸出志向へ。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"農家仲間になった！！一緒に田植えしたい！！"},
+      {who:"pacho", text:"田植えは5〜6月だ。次は漁業・林業いくぞ。"}
+    ],
+    hint:"促成栽培（高知・宮崎）と抑制栽培（長野・群馬）の場所と理由を結びつけよ。近郊農業は大都市周辺🦉"
+  },
+  {
+    id:4, era:"漁業・林業", emoji:"🐟", bgColor:"rgba(20,80,140,0.07)",
+    member:{ emoji:"🐟", name:"漁師", msg:"豊かな海の恵みを届けよう！" },
+    openingDialogs:[
+      {who:"akio", text:"漁業！！三陸沖！！潮目！！200海里！！水産大国日本！！"},
+      {who:"pacho", text:"200海里水域で日本の遠洋漁業はどうなったか言えるか？"},
+      {who:"akio", text:"激減した！！他国の200海里に入れなくなった！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"岩手・宮城県沖に広がる日本有数の漁場「□□□□沖」の□□□□を並べよ！",
+        chars:["さ","ん","り","く"], answer:["さ","ん","り","く"],
+        displayAnswer:"三陸（さんりく）沖",
+        explanation:"三陸沖！暖流（黒潮・日本海流）と寒流（親潮・千島海流）がぶつかる潮目。プランクトンが豊富でサンマ・カツオ・サバ・マグロが多く漁場としての価値が非常に高い。",
+        quiz:{ question:"三陸沖が好漁場となる最大の理由として正しいものはどれか？",
+          options:["暖流（黒潮）と寒流（親潮）がぶつかる潮目でプランクトンが豊富に発生するため","水深が浅く砂地の海底が続き底引き網漁に最適な地形のため","大陸棚が広く珊瑚礁が発達しており熱帯魚が豊富なため","太平洋の深海魚が集まる深海底曳き網漁の拠点があるため"],
+          correct:0, explanation:"潮目（潮境）が好漁場の鍵！暖流系の魚（カツオ・マグロ）と寒流系の魚（サンマ・サケ・タラ）の両方が集まる。プランクトン（植物性＋動物性）が豊富で「海の生命力」が高い海域だ。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"日本人の食文化の中心・水産業の対象「魚（さかな）」を作れ！",
+        word:["さ","か","な"], cols:2, rows:2,
+        hint_word:"魚（さかな）",
+        explanation:"さかな＝魚！日本は世界有数の水産消費国。一人当たりの魚消費量は世界トップ級。しかし200海里水域設定後の遠洋漁業激減・養殖業の台頭・漁業就業者の高齢化が課題だ。",
+        quiz:{ question:"日本の漁業の変化として最も正しいものはどれか？",
+          options:["1970年代の200海里水域設定で遠洋漁業が激減し沿岸・養殖漁業の比重が高まった","200海里水域の設定により日本の遠洋漁業が大幅に拡大し漁獲量が増加した","日本の漁獲量は一貫して増加しており現在も世界最大の水産国の地位を保っている","養殖漁業は環境負荷が大きいため規制され遠洋漁業に回帰している"],
+          correct:0, explanation:"200海里（排他的経済水域：EEZ）設定（1977年）で他国水域から締め出され遠洋漁業が激減！現在は沿岸漁業・養殖業が中心。漁獲量は1980年代をピークに減少。就業者の高齢化・担い手不足も深刻な課題だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは暖流と寒流が出会う海域だ。温度差で海水が混合されプランクトンが大量発生する。魚類にとって豊かな餌場となり多くの魚種が集まる好漁場を形成する。三陸沖・北海道南東沖が代表例だ。わたしは何？",
+        choices:["潮目（潮境・しおさかい）","大陸棚（コンチネンタルシェルフ）","深海平原","海溝（トラフ）"], correctIdx:0,
+        explanation:"潮目（潮境）！暖流と寒流の境界。栄養塩類が豊富な深海の水が湧き上がる湧昇流も発生し、植物プランクトン→動物プランクトン→小魚→大型魚という食物連鎖が豊かだ。",
+        quiz:{ question:"日本周辺の主要な漁場の説明として最も正しいものはどれか？",
+          options:["三陸沖（黒潮と親潮の潮目）・北海道東方・日本海が三大漁場で多様な魚種が水揚げされる","沖縄周辺の珊瑚礁海域が最大漁場で全国漁獲量の半分以上を占める","瀬戸内海が日本最大の漁場で遠洋漁業基地が集中している","東京湾・大阪湾などの内湾が主要漁場で工業化後も漁獲量は維持されている"],
+          correct:0, explanation:"三大漁場：三陸沖（黒潮×親潮）・北海道東方（豊かな漁場）・日本海（ズワイガニ・ホタルイカ）。瀬戸内海はかつての大漁場だが水質改善（逆説的に栄養不足）で漁獲量が減少している。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは日本の林業が抱える深刻な問題だ。国土の約67%が森林で人工林（スギ・ヒノキ）が約40%を占めるが、木材価格の低迷・林業従事者の高齢化・外国産木材との競合により手入れが行き届かない荒廃した森が増えている。わたしはどんな問題？",
+        choices:["人工林の管理不足と林業の衰退","森林火災の頻発化","野生動物による森林破壊","酸性雨による広葉樹の枯死"], correctIdx:0,
+        explanation:"日本林業の課題！国土の67%が森林（世界有数）でありながら木材自給率は約40%。高度成長期に安価な外国材に押されて国産木材の需要が激減。林業離れが進んだ。",
+        quiz:{ question:"日本の林業の特徴と課題として最も正しいものはどれか？",
+          options:["国土の約67%が森林だが林業従事者の高齢化と木材輸入で衰退し人工林の管理が問題","日本は森林が少なく木材はほぼ全量を輸入に依存している","近年林業が急成長し就業者が増加して木材自給率は100%近くになった","日本の木材は主に東南アジア・欧州に輸出され外貨獲得産業として成長中"],
+          correct:0, explanation:"日本は世界有数の森林国なのに林業は衰退！木材自給率は低迷→近年上昇傾向（40%超）。花粉症の原因のスギ・ヒノキが放置され問題に。林業の担い手確保・スマート林業の導入が課題だ。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"漁師仲間になった！！三陸の海で漁したい！！"},
+      {who:"pacho", text:"三陸は遠い。次は工業だ。太平洋ベルトが待ってるぞ。"}
+    ],
+    hint:"三陸沖の好漁場＝黒潮×親潮の潮目。200海里設定→遠洋漁業激減→養殖・沿岸漁業へ🦉"
+  },
+  {
+    id:5, era:"工業・産業", emoji:"⚙️", bgColor:"rgba(60,60,100,0.07)",
+    member:{ emoji:"⚙️", name:"エンジニア", msg:"ものづくりで日本を支えよう！" },
+    openingDialogs:[
+      {who:"akio", text:"工業！！京浜！！阪神！！中京！！北九州！！四大工業地帯！！"},
+      {who:"pacho", text:"四大工業地帯で出荷額が現在最大なのはどこだ？"},
+      {who:"akio", text:"中京！！トヨタのせいで愛知が最強！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"東京湾岸・東京〜横浜に広がる日本有数の工業地帯「□□□□工業地帯」の□□□□を並べよ！",
+        chars:["け","い","ひ","ん"], answer:["け","い","ひ","ん"],
+        displayAnswer:"京浜（けいひん）工業地帯",
+        explanation:"京浜工業地帯！東京（京）・横浜（浜）が名前の由来。印刷・出版・機械・化学工業が集積。かつては阪神と並ぶ日本最大規模だったが中京に抜かれた。",
+        quiz:{ question:"京浜工業地帯の特徴として最も正しいものはどれか？",
+          options:["東京湾岸に広がり印刷・出版・機械・化学が特徴で、首都の大消費地を背景に多様な工業が発達","愛知県を中心に自動車工業が集積し工業出荷額が日本最大の工業地帯","大阪・神戸を中心に繊維・金属工業が発達したかつての日本最大の工業地帯","北九州を中心に官営八幡製鉄所建設から発展した鉄鋼業中心の工業地帯"],
+          correct:0, explanation:"四大工業地帯の比較：京浜（東京湾岸・印刷・機械）、阪神（大阪湾岸・繊維・金属・化学）、中京（伊勢湾岸・自動車＝現在最大）、北九州（洞海湾岸・鉄鋼・化学）。現在の出荷額：中京＞阪神≒京浜≫北九州の順。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"大阪・神戸を中心とした「阪神（はんしん）工業地帯」の最初3文字を作れ！",
+        word:["は","ん","し"], cols:2, rows:2,
+        hint_word:"阪神（はんしん）工業地帯",
+        explanation:"はんし＝阪神！大阪（阪）・神戸（神）が名前の由来。繊維・金属・化学・食品など多様な工業が集積。かつては日本最大だったが中京・京浜に抜かれた。",
+        quiz:{ question:"四大工業地帯の業種的特徴として最も正しいものはどれか？",
+          options:["中京＝自動車（輸送機械）、京浜＝印刷・機械・化学、阪神＝繊維・金属・化学、北九州＝鉄鋼","阪神＝自動車（トヨタ本社）、中京＝繊維・化学、京浜＝鉄鋼、北九州＝印刷・出版","四大工業地帯はすべて重化学工業が中心で業種による差はほとんどない","京浜＝自動車（日産・ホンダ）が最大業種で輸送用機械の出荷額が日本最大"],
+          correct:0, explanation:"中京工業地帯が現在最大！トヨタ（豊田市）を中心に自動車関連企業が集積。輸送用機械の出荷額が全工業地帯・地域でダントツの1位。愛知県単独で東京都の工業出荷額を大きく上回る！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは愛知県を中心とする工業地帯だ。日本最大の工業出荷額を誇り、輸送用機械（特に自動車）が突出して多い。トヨタ自動車の本社・主要工場が立地し周辺に数百社の関連企業が集積する。わたしはどの工業地帯？",
+        choices:["中京工業地帯","京浜工業地帯","阪神工業地帯","北九州工業地帯"], correctIdx:0,
+        explanation:"中京工業地帯！名古屋（京）・三重（京につながる）が由来の一説。自動車（トヨタ）・航空機（三菱重工・川崎重工）・セラミックス（瀬戸焼）など。日本最大の工業出荷額を誇る。",
+        quiz:{ question:"中京工業地帯が日本最大の工業出荷額を達成した最大の要因はどれか？",
+          options:["トヨタ自動車を核とした自動車産業の集積と関連企業のクラスター形成","名古屋港の整備により石炭・鉄鉱石の輸入が容易になった","豊富な水資源と平野の農業労働力が工業に転換したため","名古屋城を中心とした伝統工芸が近代工業に発展したため"],
+          correct:0, explanation:"トヨタエフェクト！トヨタ本社（愛知県豊田市）を中心に一次・二次・三次の下請け企業が集積するカーズ・クラスター（産業集積）を形成。自動車1台に約3万点の部品→広大な裾野産業が生まれる。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは日本の工業地帯・工業地域が集中する帯状の地域だ。関東地方から九州北部にかけて太平洋沿岸に連なる。日本の人口・産業・交通が高度に集積し工業出荷額の約60%がここに集中する。わたしは何？",
+        choices:["太平洋ベルト","日本海ベルト","東海道メガロポリス","三大都市圏"], correctIdx:0,
+        explanation:"太平洋ベルト！関東から九州北部まで太平洋沿岸に連なる帯状の工業集積地。高度経済成長期に形成された日本の経済・産業・人口の重心地帯。",
+        quiz:{ question:"太平洋ベルトに工業が集中した最大の理由として正しいものはどれか？",
+          options:["原料輸入・製品輸出に便利な臨海立地、高速道路・新幹線などの交通網、大消費地の三条件が揃うため","豊富な石炭・鉄鉱石などの天然資源が太平洋沿岸に大量に埋蔵されているため","台風の影響が少なく1年中穏やかな気候で工場操業が安定するため","気候が温暖で従業員の生活環境が良く工場誘致に成功したため"],
+          correct:0, explanation:"太平洋ベルトの形成要因：①臨海立地（原料輸入・製品輸出が有利な港湾）②交通インフラ（新幹線・高速道路・空港）③大消費地（三大都市圏）④労働力の集積。戦後の高度成長期にこれらが相乗効果を発揮して集積が加速した。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"エンジニア仲間になった！！ロボット作りたい！！"},
+      {who:"pacho", text:"まず算数から。最終ステージ、環境・都市問題いくぞ。"}
+    ],
+    hint:"四大工業地帯：中京（最大・自動車）>阪神・京浜>北九州。太平洋ベルト形成の3条件を覚えよ🦉"
+  },
+  {
+    id:6, era:"環境・都市問題", emoji:"🏙️", bgColor:"rgba(80,40,100,0.07)",
+    member:{ emoji:"🏙️", name:"環境活動家", msg:"地球と日本の未来を守ろう！" },
+    openingDialogs:[
+      {who:"akio", text:"環境問題！！四大公害！！水俣病！！ヒートアイランド！！"},
+      {who:"pacho", text:"四大公害のうち水俣病の原因物質を言えるか？"},
+      {who:"akio", text:"有機水銀！！チッソ工場！！1950年代！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"熊本県で発生した有機水銀汚染による公害病「□□□□病」の□□□□を並べよ！",
+        chars:["み","な","ま","た"], answer:["み","な","ま","た"],
+        displayAnswer:"水俣（みなまた）病",
+        explanation:"水俣病！チッソ水俣工場が排出した有機水銀（メチル水銀）が魚介類に蓄積し、それを食べた住民に神経障害が発症。1956年に公式確認された日本の代表的公害病。",
+        quiz:{ question:"日本の四大公害として正しい組み合わせはどれか？",
+          options:["水俣病（熊本）・新潟水俣病・イタイイタイ病（富山）・四日市ぜんそく（三重）の4つ","水俣病・東京スモッグ・大阪湾汚染・博多湾汚染の4つ","水俣病・アスベスト被害・原発事故・地盤沈下の4つ","四大公害はすべて東京・大阪の大都市で発生した"],
+          correct:0, explanation:"四大公害：①水俣病（有機水銀・チッソ）②新潟水俣病（有機水銀・昭和電工）③イタイイタイ病（カドミウム・三井金属）④四日市ぜんそく（硫黄酸化物・石油化学コンビナート）。1970年の公害国会で公害対策基本法が強化された。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"1964年東京オリンピックに合わせて開業した世界初の高速鉄道「新幹（しんかん）せん」の最初3文字を作れ！",
+        word:["し","ん","か"], cols:2, rows:2,
+        hint_word:"新幹（しんかん）線",
+        explanation:"しんか＝新幹（線）！1964年10月1日東海道新幹線（東京〜新大阪）開業。時速210kmで走る世界初の高速鉄道。その後、山陽・東北・上越・北陸など全国に拡大。",
+        quiz:{ question:"新幹線の発展と課題として最も正しいものはどれか？",
+          options:["1964年東海道新幹線開業後全国に延伸したが北海道・四国への整備は課題が残る","新幹線は東海道のみで他地域への延伸計画はなく航空機が代替手段","新幹線は現在すべての都道府県に路線が通じ地域格差が解消された","新幹線開業で国内航空路線はほぼ廃止されたが逆に鉄道運賃が高騰した"],
+          correct:0, explanation:"新幹線が通じない地域（四国・北海道東部など）や、整備新幹線の未整備区間が課題！2016年北海道新幹線（新函館北斗）開業、2024年北陸新幹線延伸（金沢〜敦賀）と整備が続く。航空vs新幹線の競合も重要テーマだ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは大都市特有の気候現象だ。コンクリート・アスファルトが太陽熱を蓄え、冷房や自動車からの廃熱が加わり都市中心部の気温が周辺郊外より高くなる。東京では都心と郊外の気温差が最大5〜6℃になることもある。わたしは何現象？",
+        choices:["ヒートアイランド現象","フェーン現象","温室効果（地球温暖化）","エルニーニョ現象"], correctIdx:0,
+        explanation:"ヒートアイランド現象！都市の「熱の島」化。緑地の減少・コンクリート化・人工排熱が原因。夏の熱中症増加・突発的な集中豪雨（ゲリラ豪雨）との関係も指摘されている。",
+        quiz:{ question:"ヒートアイランド対策として最も有効なものはどれか？",
+          options:["緑地・公園の整備・屋上緑化・透水性舗装・廃熱削減など複合的な対策が有効","工場を都市中心部に集中させ廃熱を有効利用することが最善策","高層ビルを増やし風通しを改善することが最も効果的な唯一の手段","自動車利用を増やし排熱で気温を均一化することで解決できる"],
+          correct:0, explanation:"ヒートアイランド対策は複合的！①緑地増加（蒸散冷却）②透水性舗装（蒸発冷却）③屋上緑化④省エネ建築⑤クールビズ⑥クールスポット設置。東京都など大都市が対策を強化している。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは日本の地域間の人口格差問題だ。高度経済成長期に農山村から都市への人口移動が急増し、都市では過密（交通渋滞・住宅不足）が、農山村では過疎（高齢化・産業衰退・限界集落）が同時に深刻化した。わたしはどんな問題？",
+        choices:["過疎・過密問題","少子高齢化問題","外国人労働者問題","食糧自給率低下問題"], correctIdx:0,
+        explanation:"過疎・過密問題！高度成長期（1960〜70年代）に農村から三大都市圏への人口移動が急増。過疎地域では65歳以上が50%超の「限界集落」が増加し、都市では住宅・交通・環境問題が深刻化した。",
+        quiz:{ question:"過疎地域が直面する課題として最も正しいものはどれか？",
+          options:["人口流出による高齢化・農林業の衰退・公共交通や病院の廃止・限界集落の増加が問題","過疎地域では観光業が急成長し若者が戻りU・Iターンが定着している","過疎地域は補助金が十分に給付され行政サービスは都市と変わらない水準","過疎地域では自然環境が良好で移住者が増え人口は回復傾向にある"],
+          correct:0, explanation:"過疎地域の課題：①人口流出→高齢化→税収減→行政サービス低下の悪循環②限界集落（高齢化率50%超）の増加③廃校・廃病院・路線バス廃止④耕作放棄地の増加。地方創生政策（2014年〜）でU・Iターン促進が進むが解決には至っていない。" }
+      }
+    ],
+    clearDialogs:[
+      {who:"akio", text:"全部クリア！！日本地理チャンピオン！！パチョ褒めて！！"},
+      {who:"pacho", text:"…よくやった。本当によくやった。ちょっとだけな。"},
+      {who:"akio", text:"またちょっとだけかよ！！でもうれしい！！！"}
+    ],
+    hint:"四大公害（水俣・新潟水俣・イタイイタイ・四日市）の原因物質と発生地を覚えよ。過疎＝農村、過密＝都市🦉"
+  }
+];
+
+let state = {
+  currentStage:0, score:0, lives:3, party:[],
+  hintUsed:false, timerInterval:null, timerLeft:30,
+  puzzleSolvedFlag:false, quizAnswered:false, currentPuzzleIndex:0,
+  sortAnswer:[], sortRemaining:[],
+  slideTiles:[], slideCols:2, slideRows:2, slideMoves:0
+};
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function goMenu(){clearTimer();showScreen('screen-opening');}
+
+function showDialogSequence(dialogs,container,onComplete,scrollEl){
+  if(!dialogs||!dialogs.length){onComplete();return;}
+  const sc=scrollEl||container;let idx=0;
+  function next(){
+    const d=dialogs[idx++];
+    container.appendChild(makeBubble(d.who,d.text));
+    setTimeout(()=>{sc.scrollTop=sc.scrollHeight;},50);
+    if(idx<dialogs.length){const hint=document.createElement('div');hint.className='dialog-tap-hint';hint.textContent='タップで続く ▶';hint.onclick=()=>{hint.remove();next();};container.appendChild(hint);}
+    else{setTimeout(onComplete,600);}
+  }
+  next();
+}
+
+function startGame(){
+  state={currentStage:0,score:0,lives:3,party:[],hintUsed:false,
+    timerInterval:null,timerLeft:30,puzzleSolvedFlag:false,quizAnswered:false,currentPuzzleIndex:0,
+    sortAnswer:[],sortRemaining:[],slideTiles:[],slideCols:2,slideRows:2,slideMoves:0};
+  showScreen('screen-game');loadStage(0);
+}
+
+function loadStage(idx){
+  clearTimer();
+  const s=STAGES[idx];
+  state.hintUsed=false;state.puzzleSolvedFlag=false;state.quizAnswered=false;state.currentPuzzleIndex=0;
+  document.getElementById('stage-label').textContent=`ステージ ${s.id}/${STAGES.length}  ${s.emoji} ${s.era}`;
+  updateLives();updateScore();updateParty();
+  document.getElementById('hint-btn').disabled=false;
+  const content=document.getElementById('game-content');
+  content.innerHTML='';content.style.background=s.bgColor;
+  const phaseEl=document.createElement('div');phaseEl.className='text-center';
+  phaseEl.innerHTML=`<span class="phase-label">📜 問題 1/4</span>`;content.appendChild(phaseEl);
+  const da=document.createElement('div');da.className='dialog-area';content.appendChild(da);
+  content.scrollTop=0;
+  showDialogSequence(s.openingDialogs,da,()=>{
+    content.appendChild(makePuzzle(s.puzzles[0]));
+    setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+  },content);
+}
+
+function makeBubble(who,text){
+  const div=document.createElement('div');
+  div.className='dialog-bubble'+(who==='pacho'?' right':'');
+  let av;
+  if(who==='akio')av=`<img src="akio.svg" class="avatar-sm" alt="アキオ">`;
+  else if(who==='pacho')av=`<img src="pacho.svg" class="avatar-sm" alt="パチョ">`;
+  else av='🦉';
+  div.innerHTML=`<span class="dialog-avatar">${av}</span><div class="dialog-text">${text}</div>`;
+  return div;
+}
+
+function makePuzzle(p){
+  const box=document.createElement('div');box.className='puzzle-box';box.id='puzzle-box';
+  switch(p.type){
+    case 'sort':box.appendChild(makeSortPuzzle(p));break;
+    case 'riddle':box.appendChild(makeRiddlePuzzle(p));break;
+    case 'slide':box.appendChild(makeSlidePuzzle(p));break;
+  }
+  return box;
+}
+
+function pTitle(frag,html){const e=document.createElement('div');e.className='puzzle-title';e.innerHTML=html;frag.appendChild(e);}
+function pDesc(frag,txt){const e=document.createElement('div');e.className='puzzle-desc';e.textContent=txt;frag.appendChild(e);}
+
+function makeSortPuzzle(p){
+  const frag=document.createDocumentFragment();
+  pTitle(frag,p.label);pDesc(frag,p.instruction);
+  if(p.question)pDesc(frag,p.question);
+  const area=document.createElement('div');area.className='sort-area';
+  const shuffled=[...p.chars].sort(()=>Math.random()-0.5);
+  state.sortRemaining=[...shuffled];state.sortAnswer=[];
+  const ansLabel=document.createElement('div');ansLabel.className='sort-slot-label';
+  ansLabel.textContent=`↑ ここに並べよう（全${p.answer.length}文字）`;area.appendChild(ansLabel);
+  const ansSlots=document.createElement('div');ansSlots.className='sort-slots';ansSlots.id='sort-answer-slots';
+  ansSlots.addEventListener('click',e=>{const t=e.target.closest('.tile');if(!t)return;removeTileFromAnswer(parseInt(t.dataset.idx));renderSortPuzzle(p);});
+  area.appendChild(ansSlots);
+  const srcLabel=document.createElement('div');srcLabel.className='sort-slot-label';
+  srcLabel.textContent='↓ タップして上に並べよう';area.appendChild(srcLabel);
+  const srcSlots=document.createElement('div');srcSlots.className='sort-slots';srcSlots.id='sort-source-slots';
+  srcSlots.style.background='rgba(255,255,255,0.5)';area.appendChild(srcSlots);
+  const checkBtn=document.createElement('button');checkBtn.className='btn-check';checkBtn.id='puzzle-check-btn';
+  checkBtn.textContent='答えを確認する';checkBtn.disabled=true;
+  checkBtn.onclick=()=>checkSortAnswer(p);area.appendChild(checkBtn);
+  frag.appendChild(area);
+  setTimeout(()=>{
+    renderSortPuzzle(p);
+    document.getElementById('sort-source-slots')?.addEventListener('click',e=>{const t=e.target.closest('.tile');if(!t)return;addTileToAnswer(t.dataset.char,parseInt(t.dataset.idx));renderSortPuzzle(p);});
+  },10);
+  return frag;
+}
+function renderSortPuzzle(p){
+  const ans=document.getElementById('sort-answer-slots'),src=document.getElementById('sort-source-slots');
+  if(!ans||!src)return;
+  ans.innerHTML='';state.sortAnswer.forEach((item,i)=>{const t=document.createElement('div');t.className='tile in-answer';t.dataset.char=item.char;t.dataset.idx=i;t.textContent=item.char;ans.appendChild(t);});
+  src.innerHTML='';state.sortRemaining.forEach((char,i)=>{const t=document.createElement('div');t.className='tile';t.dataset.char=char;t.dataset.idx=i;t.textContent=char;src.appendChild(t);});
+  const btn=document.getElementById('puzzle-check-btn');if(btn)btn.disabled=state.sortAnswer.length!==p.answer.length;
+}
+function addTileToAnswer(char,idx){state.sortAnswer.push({char,origIdx:idx});state.sortRemaining.splice(idx,1);}
+function removeTileFromAnswer(idx){const item=state.sortAnswer.splice(idx,1)[0];state.sortRemaining.push(item.char);}
+function checkSortAnswer(p){const user=state.sortAnswer.map(a=>a.char);if(p.answer.every((ch,i)=>user[i]===ch))puzzleSolved(p);else{shakeEl('sort-answer-slots');showToast('もう一度並べ直してみよう！');}}
+
+function makeRiddlePuzzle(p){
+  const frag=document.createDocumentFragment();
+  pTitle(frag,p.label);pDesc(frag,p.instruction);
+  const rb=document.createElement('div');rb.className='riddle-text';rb.textContent=p.riddle;frag.appendChild(rb);
+  const ca=document.createElement('div');ca.className='riddle-choices';
+  const labels=['ア','イ','ウ','エ'];let done=false;
+  p.choices.forEach((ch,i)=>{const btn=document.createElement('button');btn.className='riddle-choice';btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(ch)}</span>`;
+    btn.onclick=()=>{if(done)return;if(i===p.correctIdx){done=true;btn.classList.add('correct');ca.querySelectorAll('.riddle-choice').forEach(b=>{b.disabled=true;});setTimeout(()=>puzzleSolved(p),600);}else{btn.classList.add('wrong-ans');showToast('ちがうよ！もう一度考えてみよう！');setTimeout(()=>btn.classList.remove('wrong-ans'),700);}};
+    ca.appendChild(btn);});
+  frag.appendChild(ca);return frag;
+}
+
+function makeSlidePuzzle(p){
+  const frag=document.createDocumentFragment();
+  pTitle(frag,p.label);pDesc(frag,p.instruction);
+  if(p.question)pDesc(frag,p.question);
+  const tWrap=document.createElement('div');tWrap.style.cssText='text-align:center;margin-bottom:4px';
+  const tLabel=document.createElement('div');tLabel.style.cssText='font-size:11px;color:var(--brown-mid);font-weight:bold;margin-bottom:6px';tLabel.textContent='🎯 目標';tWrap.appendChild(tLabel);
+  const tRow=document.createElement('div');tRow.style.cssText='display:flex;gap:6px;align-items:center;justify-content:center';
+  p.word.forEach(ch=>{const t=document.createElement('div');t.style.cssText='width:40px;height:40px;background:rgba(39,174,96,0.15);border:2px solid var(--green-ok);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;color:var(--green-ok)';t.textContent=ch;tRow.appendChild(t);});
+  const eSlot=document.createElement('div');eSlot.style.cssText='width:40px;height:40px;border:2px dashed var(--green-ok);border-radius:10px;opacity:0.4';tRow.appendChild(eSlot);
+  tWrap.appendChild(tRow);frag.appendChild(tWrap);
+  state.slideCols=p.cols;state.slideRows=p.rows;state.slideMoves=0;
+  const solved=[...p.word,null];let tiles=[...solved];
+  for(let i=0;i<40;i++){const ei=tiles.indexOf(null);const adj=slideAdj(ei,p.cols,p.rows);const r=adj[Math.floor(Math.random()*adj.length)];[tiles[ei],tiles[r]]=[tiles[r],tiles[ei]];}
+  if(tiles.every((v,i)=>v===solved[i])){[tiles[0],tiles[1]]=[tiles[1],tiles[0]];}
+  state.slideTiles=tiles;
+  const movesEl=document.createElement('div');movesEl.className='slide-moves';movesEl.id='slide-moves';movesEl.textContent='タップでスライド ✨';
+  const gridEl=document.createElement('div');gridEl.className=`slide-grid slide-grid-${p.cols}x${p.rows}`;gridEl.id='slide-grid';
+  gridEl.style.cssText=`display:grid;grid-template-columns:repeat(${p.cols},1fr);gap:6px;`;
+  frag.appendChild(movesEl);
+  const wrap=document.createElement('div');wrap.style.cssText='display:flex;justify-content:center;margin:4px 0';wrap.appendChild(gridEl);frag.appendChild(wrap);
+  setTimeout(()=>renderSlideGrid(p),10);
+  return frag;
+}
+function slideAdj(idx,cols,rows){const r=Math.floor(idx/cols),c=idx%cols,res=[];if(r>0)res.push(idx-cols);if(r<rows-1)res.push(idx+cols);if(c>0)res.push(idx-1);if(c<cols-1)res.push(idx+1);return res;}
+function renderSlideGrid(p){
+  const g=document.getElementById('slide-grid');if(!g)return;
+  const solved=[...p.word,null];g.innerHTML='';
+  state.slideTiles.forEach((ch,i)=>{
+    const tile=document.createElement('div');
+    if(ch===null){tile.className='slide-tile empty';}
+    else{const inPlace=ch===solved[i];tile.className='slide-tile filled'+(inPlace?' in-place':'');tile.textContent=ch;const ei=state.slideTiles.indexOf(null);const adj=slideAdj(ei,state.slideCols,state.slideRows);if(adj.includes(i)){tile.style.cursor='pointer';tile.onclick=()=>doSlideMove(i,p);}else{tile.style.cursor='default';tile.style.opacity='0.85';}}
+    g.appendChild(tile);});
+  const mv=document.getElementById('slide-moves');if(mv&&state.slideMoves>0)mv.textContent=`${state.slideMoves}手`;
+}
+function doSlideMove(tileIdx,p){
+  const ei=state.slideTiles.indexOf(null);const adj=slideAdj(ei,state.slideCols,state.slideRows);
+  if(!adj.includes(tileIdx))return;
+  [state.slideTiles[ei],state.slideTiles[tileIdx]]=[state.slideTiles[tileIdx],state.slideTiles[ei]];
+  state.slideMoves++;renderSlideGrid(p);
+  const solved=[...p.word,null];
+  if(state.slideTiles.every((v,i)=>v===solved[i])){document.querySelectorAll('.slide-tile.filled').forEach(t=>t.classList.add('win-flash'));setTimeout(()=>puzzleSolved(p),800);}
+}
+
+const PUZZLES_PER_STAGE=4;
+function puzzleSolved(p){
+  if(state.puzzleSolvedFlag)return;
+  state.puzzleSolvedFlag=true;
+  const content=document.getElementById('game-content');
+  const pbs=document.querySelectorAll('.puzzle-box');const pb=pbs[pbs.length-1];
+  if(pb){pb.style.borderColor='var(--green-ok)';pb.style.background='rgba(168,216,168,0.2)';}
+  content.appendChild(makeBubble('akio',`解けた！！${p.explanation||'正解だ！！'}`));
+  if(p.quiz){
+    state.quizAnswered=false;
+    setTimeout(()=>{
+      const pe=document.createElement('div');pe.className='text-center';
+      pe.innerHTML=`<span class="phase-label">⚡ 問題に答えよう！</span>`;content.appendChild(pe);
+      content.appendChild(makePuzzleQuiz(p.quiz));
+      setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+      startTimer();
+    },800);
+  }else{
+    const gained=100;state.score+=gained;updateScore();showScorePop(`+${gained}`);
+    advanceToNextPuzzle();
+  }
+}
+
+function makePuzzleQuiz(q){
+  const box=document.createElement('div');box.className='quiz-box';box.id='quiz-box';
+  const R=18,C=2*Math.PI*R;
+  box.innerHTML=`<div class="quiz-header"><div class="quiz-label">🎯 問題に答えよう！</div><div class="timer-ring"><svg class="timer-svg" viewBox="0 0 44 44"><circle class="timer-track" cx="22" cy="22" r="${R}"/><circle class="timer-progress" id="timer-progress" cx="22" cy="22" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="timer-text" id="timer-text">30</div></div></div><div class="quiz-question">${esc(q.question)}</div><div class="quiz-options" id="quiz-options"></div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="hint-btn" id="hint-btn-quiz" onclick="useHint()">🦉 ヒント</button></div><div class="hint-bubble" id="hint-bubble"></div>`;
+  const opts=box.querySelector('#quiz-options'),labels=['ア','イ','ウ','エ'];
+  q.options.forEach((opt,i)=>{const btn=document.createElement('button');btn.className='quiz-option';btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(opt)}</span>`;btn.onclick=()=>answerPuzzleQuiz(i,q,btn);opts.appendChild(btn);});
+  if(state.hintUsed)box.querySelector('#hint-btn-quiz').disabled=true;
+  return box;
+}
+
+function answerPuzzleQuiz(idx,q,btn){
+  if(state.quizAnswered)return;state.quizAnswered=true;clearTimer();
+  document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true);
+  const content=document.getElementById('game-content');
+  if(idx===q.correct){
+    btn.classList.add('correct');
+    const gained=100+Math.ceil(state.timerLeft*10);state.score+=gained;updateScore();showScorePop(`+${gained}`);
+    content.appendChild(makeBubble('pacho',`正解！${q.explanation}`));
+    setTimeout(()=>advanceToNextPuzzle(),1800);
+  }else{
+    btn.classList.add('wrong-ans');
+    document.querySelectorAll('.quiz-option')[q.correct].classList.add('correct');
+    loseLife();
+    content.appendChild(makeBubble('pacho',`惜しい！正解は「${q.options[q.correct]}」。${q.explanation}`));
+    if(state.lives<=0)setTimeout(showGameOver,1800);else setTimeout(()=>advanceToNextPuzzle(),2500);
+  }
+}
+
+function advanceToNextPuzzle(){
+  const s=STAGES[state.currentStage],content=document.getElementById('game-content');
+  state.currentPuzzleIndex++;
+  if(state.currentPuzzleIndex<PUZZLES_PER_STAGE){
+    state.puzzleSolvedFlag=false;state.quizAnswered=false;
+    const pe=document.createElement('div');pe.className='text-center';
+    pe.innerHTML=`<span class="phase-label">📜 問題 ${state.currentPuzzleIndex+1}/4</span>`;content.appendChild(pe);
+    content.appendChild(makePuzzle(s.puzzles[state.currentPuzzleIndex]));
+    setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+  }else{
+    if(!state.party.find(m=>m.name===s.member.name))state.party.push(s.member);
+    updateParty();
+    content.appendChild(makeBubble('pacho',`${s.member.name}が仲間になった！「${s.member.msg}」`));
+    setTimeout(()=>showStageClear(),2000);
+  }
+}
+
+function startTimer(){
+  clearTimer();state.timerLeft=30;
+  const R=18,C=2*Math.PI*R;
+  state.timerInterval=setInterval(()=>{
+    state.timerLeft--;
+    const prog=document.getElementById('timer-progress'),text=document.getElementById('timer-text');
+    if(prog){prog.style.strokeDashoffset=C*(1-state.timerLeft/30);if(state.timerLeft<=10){prog.style.stroke='var(--red-life)';if(text)text.style.color='var(--red-life)';}}
+    if(text)text.textContent=state.timerLeft;
+    if(state.timerLeft<=0){clearTimer();timeUp();}
+  },1000);
+}
+function clearTimer(){if(state.timerInterval){clearInterval(state.timerInterval);state.timerInterval=null;}}
+function timeUp(){
+  if(state.quizAnswered)return;state.quizAnswered=true;
+  document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true);loseLife();
+  if(state.lives<=0)setTimeout(showGameOver,1500);else setTimeout(()=>advanceToNextPuzzle(),2000);
+}
+
+function showStageClear(){
+  const s=STAGES[state.currentStage];
+  document.getElementById('clear-emoji').textContent=s.emoji;
+  document.getElementById('clear-title').textContent=`${s.era}ステージ クリア！`;
+  document.getElementById('clear-score').textContent=`スコア：${state.score}`;
+  document.getElementById('clear-party').innerHTML=state.party.map(m=>`<span title="${m.name}">${m.emoji}</span>`).join('');
+  const bl=document.getElementById('clear-bubbles');bl.innerHTML='';
+  const btn=document.getElementById('btn-clear-next');btn.style.visibility='hidden';
+  if(state.currentStage>=STAGES.length-1){btn.textContent='結果を見る 🏆';btn.onclick=showResult;}
+  else{btn.textContent='次のステージへ →';btn.onclick=nextStage;}
+  showScreen('screen-clear');
+  showDialogSequence(s.clearDialogs,bl,()=>{btn.style.visibility='';},document.getElementById('screen-clear'));
+}
+function nextStage(){state.currentStage++;if(state.currentStage>=STAGES.length){showResult();return;}showScreen('screen-game');loadStage(state.currentStage);}
+function showGameOver(){document.getElementById('go-score').textContent=`スコア：${state.score}`;showScreen('screen-gameover');}
+function showResult(){document.getElementById('result-score').textContent=`最終スコア：${state.score}`;document.getElementById('result-party').innerHTML=state.party.map(m=>`<span title="${m.name}">${m.emoji}</span>`).join('');showScreen('screen-result');}
+function closeFeedback(){document.getElementById('feedback-overlay').classList.remove('visible');if(state.currentStage>=STAGES.length-1)showResult();else showStageClear();}
+
+function useHint(){
+  if(state.hintUsed)return;state.hintUsed=true;state.score=Math.floor(state.score/2);updateScore();
+  const hint=STAGES[state.currentStage].hint;
+  document.querySelectorAll('.hint-btn').forEach(b=>b.disabled=true);
+  const hb=document.getElementById('hint-bubble');if(hb){hb.textContent=`🦉 フクロウ博士：${hint}（ヒント使用でスコア半減！）`;hb.classList.add('visible');}
+  const d=document.createElement('div');d.className='hint-bubble visible mt8';d.textContent=`🦉 フクロウ博士：${hint}（ヒント使用でスコア半減！）`;
+  document.getElementById('game-content').appendChild(d);d.scrollIntoView({behavior:'smooth'});
+}
+
+function loseLife(){state.lives=Math.max(0,state.lives-1);updateLives();const el=document.getElementById('lives-display');el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),500);}
+function updateLives(){document.getElementById('lives-display').textContent='❤️'.repeat(state.lives)+'🖤'.repeat(3-state.lives);}
+function updateScore(){document.getElementById('score-display').textContent=state.score;}
+function updateParty(){const c=document.getElementById('party-members');c.innerHTML='';state.party.forEach(m=>{const s=document.createElement('span');s.className='party-member';s.textContent=m.emoji;s.title=`${m.name}：${m.msg}`;c.appendChild(s);});}
+function esc(str){const d=document.createElement('div');d.appendChild(document.createTextNode(str));return d.innerHTML;}
+function shakeEl(id){const el=document.getElementById(id);if(!el)return;el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),500);}
+function showToast(msg){const t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:white;font-size:13px;padding:8px 18px;border-radius:20px;z-index:300;animation:scoreFly 2s ease forwards;white-space:nowrap';document.body.appendChild(t);setTimeout(()=>t.remove(),2000);}
+function showScorePop(text){const p=document.createElement('div');p.className='score-pop';p.textContent=text;p.style.cssText='left:50%;top:40%;transform:translateX(-50%)';document.body.appendChild(p);setTimeout(()=>p.remove(),1200);}
+</script>
+</body>
+</html>
