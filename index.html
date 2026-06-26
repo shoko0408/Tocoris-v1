@@ -85,6 +85,23 @@
       font-size: 1.2rem;
     }
 
+    .game-icon-imgs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      flex-shrink: 0;
+    }
+    .game-icon-imgs img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      border: 1.5px solid rgba(255,255,255,0.35);
+    }
+    .game-icon-imgs img:last-child { margin-left: -8px; }
+
     .footer {
       margin-top: 40px;
       color: #4a5568;
@@ -122,6 +139,18 @@
       <div class="game-info">
         <div class="game-title">Escape Line v1.0</div>
         <div class="game-desc">一筆書き脱出ゲーム</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+
+    <a class="game-card" href="AkioPachoQuiz/quiz-genre.html">
+      <div class="game-icon-imgs">
+        <img src="AkioPachoQuiz/akio.svg" alt="アキオ">
+        <img src="AkioPachoQuiz/pacho.svg" alt="パチョ">
+      </div>
+      <div class="game-info">
+        <div class="game-title">アキオとパチョの謎解きトラベラー</div>
+        <div class="game-desc">知育謎解きRPG・ジャンル選択</div>
       </div>
       <div class="arrow">›</div>
     </a>

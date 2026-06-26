@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background -->
+  <circle cx="100" cy="100" r="100" fill="#C8EAFA"/>
+
+  <!-- Body / fluffy chest at bottom -->
+  <ellipse cx="100" cy="192" rx="58" ry="26" fill="#686868"/>
+  <ellipse cx="100" cy="186" rx="42" ry="20" fill="#909090"/>
+  <ellipse cx="100" cy="181" rx="28" ry="14" fill="#CCCCCC"/>
+
+  <!-- BIG cat ears (drawn before head so head overlaps base) -->
+  <!-- Left ear: large triangle -->
+  <path d="M36 90 L22 28 L82 72Z" fill="#5E5E5E"/>
+  <path d="M40 86 L30 42 L78 70Z" fill="#828282"/>
+
+  <!-- Right ear: large triangle -->
+  <path d="M164 90 L178 28 L118 72Z" fill="#5E5E5E"/>
+  <path d="M160 86 L170 42 L122 70Z" fill="#828282"/>
+
+  <!-- Wide horizontal head (横長) -->
+  <ellipse cx="100" cy="118" rx="72" ry="56" fill="#848484"/>
+
+  <!-- Light face muzzle area (wide oval, lower face) -->
+  <ellipse cx="100" cy="128" rx="44" ry="36" fill="#B8B8B8"/>
+
+  <!-- Slightly lighter forehead -->
+  <ellipse cx="100" cy="98" rx="54" ry="30" fill="#969696"/>
+
+  <!-- Dark gray patches on upper sides (tabby look) -->
+  <ellipse cx="56" cy="100" rx="22" ry="26" fill="#6A6A6A"/>
+  <ellipse cx="144" cy="100" rx="22" ry="26" fill="#6A6A6A"/>
+
+  <!-- ===== ANIME EYES: large, black, half-lidded ===== -->
+  <!-- Left eye white -->
+  <ellipse cx="72" cy="108" rx="17" ry="15" fill="white"/>
+  <!-- Left black iris (large) -->
+  <circle cx="72" cy="110" r="13" fill="#161616"/>
+  <!-- Left highlights (anime sparkle) -->
+  <circle cx="77" cy="104" r="4.5" fill="white"/>
+  <circle cx="67" cy="114" r="2" fill="white" opacity="0.55"/>
+  <!-- Left heavy upper eyelid (half-closed grumpy) -->
+  <path d="M55 108 Q72 93 89 108" stroke="#161616" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Right eye white -->
+  <ellipse cx="128" cy="108" rx="17" ry="15" fill="white"/>
+  <!-- Right black iris -->
+  <circle cx="128" cy="110" r="13" fill="#161616"/>
+  <!-- Right highlights -->
+  <circle cx="133" cy="104" r="4.5" fill="white"/>
+  <circle cx="123" cy="114" r="2" fill="white" opacity="0.55"/>
+  <!-- Right heavy upper eyelid -->
+  <path d="M111 108 Q128 93 145 108" stroke="#161616" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Nose: small upside-down triangle, gray -->
+  <path d="M96 124 L100 118 L104 124Z" fill="#6E6E6E"/>
+
+  <!-- Mouth: flat/slight grumpy curve -->
+  <path d="M93 131 Q100 128 107 131" stroke="#7A7A7A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Whiskers (longer, cat-like) -->
+  <line x1="14" y1="122" x2="82" y2="128" stroke="#AAAAAA" stroke-width="2" stroke-linecap="round"/>
+  <line x1="12" y1="132" x2="80" y2="132" stroke="#AAAAAA" stroke-width="2" stroke-linecap="round"/>
+  <line x1="14" y1="142" x2="82" y2="136" stroke="#AAAAAA" stroke-width="2" stroke-linecap="round"/>
+  <line x1="186" y1="122" x2="118" y2="128" stroke="#AAAAAA" stroke-width="2" stroke-linecap="round"/>
+  <line x1="188" y1="132" x2="120" y2="132" stroke="#AAAAAA" stroke-width="2" stroke-linecap="round"/>
+  <line x1="186" y1="142" x2="118" y2="136" stroke="#AAAAAA" stroke-width="2" stroke-linecap="round"/>
+</svg>

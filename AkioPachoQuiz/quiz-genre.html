@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>アキオとパチョの謎解きトラベラー</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Sans', 'BIZ UDPGothic', 'Meiryo', sans-serif;
+    background: #fdf6e3;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(210,180,140,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(180,140,100,0.12) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(160,120,80,0.03) 40px, rgba(160,120,80,0.03) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(160,120,80,0.03) 40px, rgba(160,120,80,0.03) 41px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    padding: 20px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .back-link {
+    align-self: flex-start;
+    font-size: 13px;
+    color: #7a5c2e;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 0;
+  }
+
+  .header {
+    text-align: center;
+    width: 100%;
+  }
+
+  .title-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #8b4513, #c8860a);
+    color: #fff8e7;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+
+  .main-title {
+    font-size: 26px;
+    font-weight: bold;
+    color: #3d2c0e;
+    line-height: 1.3;
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.7);
+  }
+
+  .sub-title {
+    font-size: 13px;
+    color: #7a5c2e;
+    margin-top: 6px;
+  }
+
+  .characters {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .char-card {
+    background: rgba(255,255,255,0.7);
+    border: 2px solid #d4a96a;
+    border-radius: 16px;
+    padding: 12px 16px;
+    text-align: center;
+    flex: 1;
+    max-width: 180px;
+    box-shadow: 0 3px 8px rgba(139,69,19,0.12);
+  }
+
+  .char-emoji { font-size: 36px; display: block; margin-bottom: 4px; }
+  .char-name { font-size: 15px; font-weight: bold; color: #3d2c0e; }
+  .char-desc { font-size: 11px; color: #7a5c2e; margin-top: 4px; line-height: 1.4; }
+
+  .speech-bubbles {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bubble { display: flex; gap: 8px; align-items: flex-start; }
+  .bubble.right { flex-direction: row-reverse; }
+  .bubble-avatar { font-size: 24px; flex-shrink: 0; margin-top: 4px; }
+
+  .bubble-text {
+    background: rgba(255,255,255,0.85);
+    border: 1.5px solid #d4a96a;
+    border-radius: 14px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #3d2c0e;
+    line-height: 1.5;
+    max-width: calc(100% - 44px);
+    box-shadow: 0 2px 6px rgba(139,69,19,0.08);
+    position: relative;
+  }
+
+  .bubble:not(.right) .bubble-text::before {
+    content: ''; position: absolute; left: -8px; top: 10px;
+    border: 6px solid transparent; border-right-color: #d4a96a;
+  }
+  .bubble:not(.right) .bubble-text::after {
+    content: ''; position: absolute; left: -6px; top: 11px;
+    border: 5px solid transparent; border-right-color: rgba(255,255,255,0.85);
+  }
+  .bubble.right .bubble-text::before {
+    content: ''; position: absolute; right: -8px; top: 10px;
+    border: 6px solid transparent; border-left-color: #d4a96a;
+  }
+  .bubble.right .bubble-text::after {
+    content: ''; position: absolute; right: -6px; top: 11px;
+    border: 5px solid transparent; border-left-color: rgba(255,255,255,0.85);
+  }
+
+  .genre-section { width: 100%; }
+
+  .section-label {
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    color: #7a5c2e;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+  .section-label::before, .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #d4a96a, transparent);
+  }
+
+  .genre-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .genre-card {
+    background: rgba(255,255,255,0.75);
+    border: 2px solid #d4a96a;
+    border-radius: 18px;
+    padding: 18px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 3px 10px rgba(139,69,19,0.10);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .genre-card:active { transform: scale(0.97); box-shadow: 0 1px 4px rgba(139,69,19,0.15); }
+
+  .genre-card.available {
+    border-color: #c8860a;
+    background: linear-gradient(135deg, rgba(255,248,230,0.9), rgba(255,235,180,0.85));
+  }
+  .genre-card.available:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(139,69,19,0.18);
+    border-color: #8b4513;
+  }
+
+  .genre-card.coming-soon {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.3);
+  }
+
+  .genre-emoji { font-size: 38px; line-height: 1; }
+  .genre-name { font-size: 14px; font-weight: bold; color: #3d2c0e; line-height: 1.3; }
+  .genre-desc { font-size: 10px; color: #7a5c2e; line-height: 1.3; }
+
+  .coming-soon-badge {
+    position: absolute;
+    top: 8px; right: -10px;
+    background: #999;
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 16px 2px 8px;
+    transform: rotate(15deg);
+    border-radius: 4px;
+  }
+
+  .new-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 7px;
+    border-radius: 10px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .footer { font-size: 11px; color: #a08060; text-align: center; padding-bottom: 10px; }
+  .char-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; object-position: top center; border: 2.5px solid #d4a96a; display: block; margin: 0 auto 4px; }
+  .bubble-avatar-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; object-position: top center; border: 1.5px solid #d4a96a; flex-shrink: 0; margin-top: 4px; }
+
+  .deco-line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #d4a96a 20%, #8b4513 50%, #d4a96a 80%, transparent);
+    border-radius: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <a href="../index.html" class="back-link">← ゲームランドに戻る</a>
+
+  <div class="header">
+    <div class="title-badge">知育謎解きRPG</div>
+    <div class="main-title">アキオとパチョの<br>謎解きトラベラー</div>
+    <div class="sub-title">謎を解いて仲間を集めよう</div>
+  </div>
+
+  <div class="deco-line"></div>
+
+  <div class="characters">
+    <div class="char-card">
+      <img src="akio.svg" class="char-img" alt="アキオ">
+      <div class="char-name">アキオ</div>
+      <div class="char-desc">歴史大好き<br>興奮しすぎるおじさん</div>
+    </div>
+    <div class="char-card">
+      <img src="pacho.svg" class="char-img" alt="パチョ">
+      <div class="char-name">パチョ</div>
+      <div class="char-desc">しゃべる白黒<br>はちわれ猫・毒舌</div>
+    </div>
+  </div>
+
+  <div class="speech-bubbles">
+    <div class="bubble">
+      <img src="akio.svg" class="bubble-avatar-img" alt="アキオ">
+      <div class="bubble-text">パチョ！冒険に出かけよう！謎を解いて仲間を集めるんだ！</div>
+    </div>
+    <div class="bubble right">
+      <img src="pacho.svg" class="bubble-avatar-img" alt="パチョ">
+      <div class="bubble-text">はいはい。まずはジャンル選んでよ。早くしてくれ。</div>
+    </div>
+  </div>
+
+  <div class="deco-line"></div>
+
+  <div class="genre-section">
+    <div class="section-label">ジャンルを選ぼう</div>
+    <div class="genre-grid">
+
+      <a href="japanese-history.html" class="genre-card available">
+        <span class="new-badge">NEW</span>
+        <span class="genre-emoji">⛩️</span>
+        <div class="genre-name">日本史</div>
+        <div class="genre-desc">縄文から江戸まで<br>全6ステージ！</div>
+      </a>
+
+      <div class="genre-card coming-soon">
+        <span class="coming-soon-badge">準備中</span>
+        <span class="genre-emoji">🔬</span>
+        <div class="genre-name">理科・科学</div>
+        <div class="genre-desc">元素・生物・物理<br>など</div>
+      </div>
+
+      <div class="genre-card coming-soon">
+        <span class="coming-soon-badge">準備中</span>
+        <span class="genre-emoji">🌍</span>
+        <div class="genre-name">世界史</div>
+        <div class="genre-desc">古代〜現代まで<br>世界を旅しよう</div>
+      </div>
+
+      <div class="genre-card coming-soon">
+        <span class="coming-soon-badge">準備中</span>
+        <span class="genre-emoji">🔢</span>
+        <div class="genre-name">算数・数学</div>
+        <div class="genre-desc">数字の謎を<br>解き明かせ</div>
+      </div>
+
+      <div class="genre-card coming-soon">
+        <span class="coming-soon-badge">準備中</span>
+        <span class="genre-emoji">🗾</span>
+        <div class="genre-name">地理</div>
+        <div class="genre-desc">都道府県・世界地図<br>マスターへ</div>
+      </div>
+
+      <div class="genre-card coming-soon">
+        <span class="coming-soon-badge">準備中</span>
+        <span class="genre-emoji">📖</span>
+        <div class="genre-name">国語・ことば</div>
+        <div class="genre-desc">ことわざ・漢字・<br>四字熟語</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">🦉 フクロウ博士がいつでも助けてくれるよ！</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>アキオとパチョの謎解きトラベラー</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --washi:#fdf6e3; --brown-dark:#3d2c0e; --brown-mid:#7a5c2e;
+  --brown-light:#d4a96a; --brown-pale:#f5e6c8; --red-life:#e74c3c;
+  --gold:#c8860a; --green-ok:#27ae60; --blue-hint:#2980b9;
+}
+html,body { height:100%; font-family:'Hiragino Maru Gothic ProN','Hiragino Sans','BIZ UDPGothic','Meiryo',sans-serif; background:var(--washi); color:var(--brown-dark); overflow:hidden; }
+body::before { content:''; position:fixed; inset:0; background:radial-gradient(ellipse at 15% 15%,rgba(210,180,140,0.2) 0%,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(180,140,100,0.15) 0%,transparent 55%),repeating-linear-gradient(0deg,transparent,transparent 50px,rgba(160,120,80,0.025) 50px,rgba(160,120,80,0.025) 51px); pointer-events:none; z-index:0; }
+
+.screen { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; z-index:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.screen.active { display:flex; }
+#screen-opening { justify-content:center; padding:20px 16px; gap:16px; }
+.opening-badge { display:inline-block; background:linear-gradient(135deg,#8b4513,#c8860a); color:#fff8e7; font-size:11px; font-weight:bold; letter-spacing:2px; padding:4px 16px; border-radius:20px; margin-bottom:10px; }
+.opening-title { font-size:24px; font-weight:bold; color:var(--brown-dark); line-height:1.3; text-shadow:1px 1px 0 rgba(255,255,255,0.8); }
+.opening-sub { font-size:13px; color:var(--brown-mid); margin-top:6px; }
+.deco-line { width:100%; max-width:400px; height:2px; background:linear-gradient(to right,transparent,var(--brown-light) 20%,var(--gold) 50%,var(--brown-light) 80%,transparent); border-radius:1px; }
+.char-display { display:flex; justify-content:space-around; width:100%; max-width:360px; }
+.char-big { font-size:52px; filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.15)); animation:charFloat 3s ease-in-out infinite; }
+.char-big:last-child { animation-delay:1.5s; }
+@keyframes charFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.op-bubbles { width:100%; max-width:400px; display:flex; flex-direction:column; gap:10px; }
+.op-bubble { display:flex; gap:8px; align-items:flex-start; }
+.op-bubble.right { flex-direction:row-reverse; }
+.op-bubble-avatar { font-size:22px; flex-shrink:0; margin-top:4px; }
+.op-bubble-text { background:rgba(255,255,255,0.88); border:1.5px solid var(--brown-light); border-radius:14px; padding:8px 12px; font-size:13px; color:var(--brown-dark); line-height:1.55; max-width:calc(100% - 44px); box-shadow:0 2px 8px rgba(139,69,19,0.08); position:relative; }
+.op-bubble:not(.right) .op-bubble-text::before { content:''; position:absolute; left:-8px; top:10px; border:6px solid transparent; border-right-color:var(--brown-light); }
+.op-bubble:not(.right) .op-bubble-text::after { content:''; position:absolute; left:-6px; top:11px; border:5px solid transparent; border-right-color:rgba(255,255,255,0.88); }
+.op-bubble.right .op-bubble-text::before { content:''; position:absolute; right:-8px; top:10px; border:6px solid transparent; border-left-color:var(--brown-light); }
+.op-bubble.right .op-bubble-text::after { content:''; position:absolute; right:-6px; top:11px; border:5px solid transparent; border-left-color:rgba(255,255,255,0.88); }
+.stage-list { width:100%; max-width:400px; display:flex; flex-direction:column; gap:8px; }
+.stage-item { background:rgba(255,255,255,0.75); border:2px solid var(--brown-light); border-radius:14px; padding:12px 16px; display:flex; align-items:center; gap:12px; font-size:13px; }
+.stage-item .si-num { font-size:10px; font-weight:bold; color:var(--brown-mid); background:var(--brown-pale); border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.stage-item .si-emoji { font-size:18px; }
+.stage-item .si-era { font-weight:bold; }
+.btn-start { background:linear-gradient(135deg,#8b4513,#c8860a); color:#fff8e7; font-size:18px; font-weight:bold; padding:16px 48px; border:none; border-radius:30px; cursor:pointer; box-shadow:0 4px 16px rgba(139,69,19,0.35); letter-spacing:2px; transition:all 0.2s; width:100%; max-width:300px; }
+.btn-start:active { transform:scale(0.97); }
+
+#screen-game { padding:0; justify-content:flex-start; }
+.game-header { width:100%; background:linear-gradient(180deg,#4a2d0a 0%,#6b3e1a 100%); padding:10px 14px 8px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+.gh-top { display:flex; justify-content:space-between; align-items:center; }
+.gh-stage-info { color:#f5e6c8; font-size:12px; font-weight:bold; }
+.gh-lives { display:flex; gap:4px; font-size:18px; }
+.gh-bottom { display:flex; justify-content:space-between; align-items:center; }
+.gh-score { color:#f0d090; font-size:13px; font-weight:bold; }
+.gh-score span { color:#ffd700; font-size:16px; }
+.party-bar { width:100%; background:rgba(74,45,10,0.12); border-bottom:1px solid var(--brown-light); padding:6px 14px; display:flex; align-items:center; gap:6px; flex-shrink:0; min-height:40px; }
+.party-label { font-size:10px; color:var(--brown-mid); font-weight:bold; flex-shrink:0; }
+.party-members { display:flex; gap:4px; flex-wrap:wrap; }
+.party-member { font-size:22px; animation:memberJoin 0.4s ease-out; }
+@keyframes memberJoin { from{transform:scale(0) rotate(-180deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+.game-content { flex:1; width:100%; padding:12px 14px 16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+
+.dialog-area { display:flex; flex-direction:column; gap:8px; }
+.dialog-bubble { display:flex; gap:8px; align-items:flex-start; }
+.dialog-bubble.right { flex-direction:row-reverse; }
+.dialog-avatar { font-size:20px; flex-shrink:0; margin-top:4px; }
+.dialog-text { background:rgba(255,255,255,0.88); border:1.5px solid var(--brown-light); border-radius:12px; padding:7px 11px; font-size:13px; line-height:1.5; max-width:calc(100% - 40px); box-shadow:0 2px 6px rgba(139,69,19,0.07); position:relative; }
+.dialog-bubble:not(.right) .dialog-text::before { content:''; position:absolute; left:-7px; top:9px; border:5px solid transparent; border-right-color:var(--brown-light); }
+.dialog-bubble:not(.right) .dialog-text::after { content:''; position:absolute; left:-5px; top:10px; border:4px solid transparent; border-right-color:rgba(255,255,255,0.88); }
+.dialog-bubble.right .dialog-text::before { content:''; position:absolute; right:-7px; top:9px; border:5px solid transparent; border-left-color:var(--brown-light); }
+.dialog-bubble.right .dialog-text::after { content:''; position:absolute; right:-5px; top:10px; border:4px solid transparent; border-left-color:rgba(255,255,255,0.88); }
+
+.puzzle-box { background:rgba(255,255,255,0.82); border:2px solid var(--brown-light); border-radius:18px; padding:14px; box-shadow:0 3px 12px rgba(139,69,19,0.1); }
+.puzzle-title { font-size:12px; font-weight:bold; color:var(--brown-mid); letter-spacing:1px; margin-bottom:8px; }
+.puzzle-desc { font-size:13px; color:var(--brown-dark); line-height:1.6; margin-bottom:8px; }
+
+/* SORT */
+.sort-area { display:flex; flex-direction:column; gap:10px; }
+.sort-slot-label { font-size:10px; color:var(--brown-mid); text-align:center; margin-bottom:4px; }
+.sort-slots { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; min-height:44px; background:rgba(212,169,106,0.15); border:1.5px dashed var(--brown-light); border-radius:10px; padding:6px; align-items:center; }
+.tile { background:linear-gradient(135deg,#fff8e7,#f5e6c8); border:2px solid var(--brown-light); border-radius:10px; min-width:40px; height:40px; padding:0 6px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.15s; box-shadow:0 2px 6px rgba(139,69,19,0.15); user-select:none; color:var(--brown-dark); }
+.tile:active { transform:scale(0.9); }
+.tile.in-answer { background:linear-gradient(135deg,#fff3cd,#ffe08a); border-color:var(--gold); }
+
+/* BLANK */
+.blank-area { display:flex; flex-direction:column; gap:12px; }
+.blank-sentence { font-size:17px; font-weight:bold; text-align:center; line-height:2; color:var(--brown-dark); }
+.blank-box { display:inline-block; min-width:52px; padding:0 6px; height:36px; border-bottom:3px solid var(--gold); border-radius:4px 4px 0 0; background:rgba(255,240,180,0.5); vertical-align:middle; text-align:center; line-height:36px; font-size:16px; font-weight:bold; color:var(--brown-dark); margin:0 2px; cursor:pointer; }
+.blank-box.filled { background:rgba(255,200,50,0.3); }
+.choices-grid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.choice-btn { background:linear-gradient(135deg,#fff8e7,#f5e6c8); border:2px solid var(--brown-light); border-radius:10px; padding:8px 16px; font-size:15px; font-weight:bold; cursor:pointer; color:var(--brown-dark); min-width:52px; }
+.choice-btn:active { transform:scale(0.93); }
+.choice-btn.used { opacity:0.35; pointer-events:none; }
+.btn-check { background:linear-gradient(135deg,#6b3e1a,var(--gold)); color:#fff8e7; font-size:15px; font-weight:bold; padding:11px 24px; border:none; border-radius:24px; cursor:pointer; box-shadow:0 3px 10px rgba(139,69,19,0.25); width:100%; }
+.btn-check:active { transform:scale(0.97); }
+.btn-check:disabled { opacity:0.5; pointer-events:none; }
+
+/* FIND-ODD */
+.find-odd-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.find-odd-card { background:rgba(255,255,255,0.88); border:2.5px solid var(--brown-light); border-radius:16px; padding:16px 8px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 2px 8px rgba(139,69,19,0.1); }
+.find-odd-card:active { transform:scale(0.95); }
+.find-odd-card .fo-emoji { font-size:34px; line-height:1; }
+.find-odd-card .fo-label { font-size:13px; font-weight:bold; color:var(--brown-dark); }
+
+/* RIDDLE */
+.riddle-text { background:rgba(255,248,210,0.95); border:2px solid var(--brown-light); border-radius:14px; padding:14px 16px; font-size:14px; line-height:1.75; color:var(--brown-dark); text-align:center; font-style:italic; margin-bottom:8px; }
+.riddle-choices { display:flex; flex-direction:column; gap:8px; }
+.riddle-choice { background:rgba(255,255,255,0.9); border:2px solid var(--brown-light); border-radius:12px; padding:11px 14px; font-size:14px; font-weight:bold; cursor:pointer; color:var(--brown-dark); display:flex; align-items:center; gap:10px; text-align:left; width:100%; }
+.riddle-choice:active { transform:scale(0.98); }
+.riddle-choice:disabled { cursor:default; }
+
+/* CIPHER */
+.cipher-key-table { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; background:rgba(41,128,185,0.07); border:1.5px solid rgba(41,128,185,0.25); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+.cipher-key-cell { display:flex; align-items:center; gap:3px; background:rgba(255,255,255,0.9); border-radius:8px; padding:5px 10px; font-size:15px; }
+.ck-sym { font-size:18px; }
+.ck-eq { color:var(--brown-mid); font-size:12px; }
+.ck-kana { font-weight:bold; color:var(--brown-dark); }
+.ck-kana.hidden-kana { color:var(--red-life); font-size:18px; }
+.cipher-message { font-size:26px; text-align:center; letter-spacing:6px; padding:12px 8px; background:rgba(255,255,255,0.75); border-radius:12px; border:1.5px dashed var(--brown-light); line-height:1.4; }
+.cipher-hint-note { font-size:11px; color:var(--brown-mid); text-align:center; margin:4px 0 8px; }
+
+/* SLIDE PUZZLE */
+.slide-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.slide-target-label { font-size:11px; color:var(--brown-mid); font-weight:bold; letter-spacing:0.5px; }
+.slide-target-row { display:flex; gap:6px; align-items:center; justify-content:center; }
+.slide-target-tile { width:40px; height:40px; background:rgba(39,174,96,0.15); border:2px solid var(--green-ok); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:bold; color:var(--green-ok); }
+.slide-grid { display:grid; gap:6px; }
+.slide-grid-2x2 { grid-template-columns:repeat(2,1fr); }
+.slide-tile { width:80px; height:80px; font-size:28px; font-weight:bold; display:flex; align-items:center; justify-content:center; border-radius:14px; cursor:pointer; user-select:none; transition:transform 0.1s, background 0.2s; }
+.slide-tile.filled { background:linear-gradient(135deg,#fff8e7,#f5e6c8); border:2.5px solid var(--brown-light); box-shadow:0 3px 10px rgba(139,69,19,0.18); color:var(--brown-dark); }
+.slide-tile.filled:active { transform:scale(0.93); }
+.slide-tile.empty { background:rgba(212,169,106,0.1); border:2px dashed rgba(212,169,106,0.35); cursor:default; }
+.slide-tile.in-place { border-color:var(--green-ok); background:linear-gradient(135deg,#eafaf1,#d5f5e3); }
+.slide-tile.win-flash { background:linear-gradient(135deg,#d4edda,#a8d8a8); border-color:var(--green-ok); animation:correctPop 0.4s ease; }
+.slide-moves { font-size:12px; color:var(--brown-mid); text-align:center; }
+
+/* SPOT THE DIFF */
+.spotthediff-context { font-size:12px; color:var(--brown-mid); margin-bottom:8px; text-align:center; font-weight:bold; letter-spacing:0.5px; }
+.spotthediff-sentence { font-size:16px; line-height:2.4; color:var(--brown-dark); text-align:center; padding:4px; }
+.diff-clickable { display:inline-block; background:rgba(255,248,210,0.9); border:2px solid var(--gold); border-radius:8px; padding:1px 10px; margin:0 2px; cursor:pointer; font-weight:bold; transition:all 0.15s; }
+.diff-clickable:active { transform:scale(0.95); }
+.diff-clickable.wrong-pick { border-color:var(--red-life); background:rgba(231,76,60,0.15); animation:shake 0.4s ease; }
+.diff-clickable.correct-found { border-color:var(--green-ok); background:rgba(39,174,96,0.2); animation:correctPop 0.3s ease; }
+.diff-not-wrong-msg { font-size:12px; color:var(--red-life); text-align:center; margin-top:4px; min-height:18px; }
+
+/* SHARED RESULT STYLES */
+.opt-label { width:26px; height:26px; border-radius:50%; background:var(--brown-pale); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color:var(--brown-mid); flex-shrink:0; }
+.correct { background:linear-gradient(135deg,#d4edda,#a8d8a8) !important; border-color:var(--green-ok) !important; }
+.correct .opt-label { background:var(--green-ok); color:white; }
+.wrong-ans { background:linear-gradient(135deg,#fde8e8,#f5b8b8) !important; border-color:var(--red-life) !important; }
+.wrong-ans .opt-label { background:var(--red-life); color:white; }
+
+/* QUIZ */
+.quiz-box { background:rgba(255,255,255,0.88); border:2px solid var(--gold); border-radius:18px; padding:14px; box-shadow:0 3px 14px rgba(139,69,19,0.12); animation:slideUp 0.35s ease; }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.quiz-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.quiz-label { font-size:11px; font-weight:bold; color:var(--gold); background:rgba(200,134,10,0.1); padding:3px 10px; border-radius:12px; }
+.timer-ring { position:relative; width:44px; height:44px; flex-shrink:0; }
+.timer-svg { transform:rotate(-90deg); width:44px; height:44px; }
+.timer-track { fill:none; stroke:rgba(200,134,10,0.2); stroke-width:4; }
+.timer-progress { fill:none; stroke:var(--gold); stroke-width:4; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-text { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:bold; color:var(--gold); }
+.quiz-question { font-size:15px; font-weight:bold; color:var(--brown-dark); line-height:1.6; margin-bottom:12px; background:rgba(212,169,106,0.12); border-radius:10px; padding:10px 12px; }
+.quiz-options { display:flex; flex-direction:column; gap:8px; }
+.quiz-option { background:rgba(255,255,255,0.9); border:2px solid var(--brown-light); border-radius:12px; padding:11px 14px; font-size:14px; font-weight:bold; cursor:pointer; color:var(--brown-dark); text-align:left; display:flex; align-items:center; gap:10px; line-height:1.4; }
+.quiz-option:active:not(:disabled) { transform:scale(0.98); }
+.quiz-option:disabled { cursor:default; }
+.hint-btn { background:linear-gradient(135deg,#1a5276,var(--blue-hint)); color:white; font-size:13px; font-weight:bold; padding:8px 16px; border:none; border-radius:20px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.hint-btn:disabled { opacity:0.4; pointer-events:none; }
+.hint-bubble { background:rgba(234,242,251,0.95); border:2px solid var(--blue-hint); border-radius:14px; padding:10px 14px; font-size:13px; color:#1a3a5c; line-height:1.5; display:none; animation:slideUp 0.3s ease; }
+.hint-bubble.visible { display:block; }
+
+/* RESULT */
+.feedback-overlay { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; z-index:100; background:rgba(0,0,0,0.5); backdrop-filter:blur(3px); }
+.feedback-overlay.visible { display:flex; }
+.feedback-card { background:var(--washi); border-radius:24px; padding:28px 32px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.25); max-width:320px; width:90%; animation:popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275); }
+@keyframes popIn { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
+.feedback-emoji { font-size:56px; margin-bottom:8px; }
+.feedback-title { font-size:22px; font-weight:bold; color:var(--brown-dark); margin-bottom:6px; }
+.feedback-sub { font-size:13px; color:var(--brown-mid); margin-bottom:16px; line-height:1.5; }
+.feedback-score { font-size:28px; font-weight:bold; color:var(--gold); margin-bottom:6px; }
+.feedback-member { font-size:38px; margin-bottom:8px; }
+.feedback-member-name { font-size:14px; color:var(--green-ok); font-weight:bold; margin-bottom:16px; white-space:pre-line; }
+.btn-next { background:linear-gradient(135deg,#8b4513,var(--gold)); color:#fff8e7; font-size:16px; font-weight:bold; padding:13px 36px; border:none; border-radius:26px; cursor:pointer; box-shadow:0 4px 14px rgba(139,69,19,0.3); width:100%; }
+.btn-next:active { transform:scale(0.97); }
+.special-screen { width:100%; max-width:400px; padding:24px 16px 40px; display:flex; flex-direction:column; align-items:center; gap:16px; margin:0 auto; }
+.special-emoji { font-size:72px; text-align:center; }
+.special-title { font-size:26px; font-weight:bold; color:var(--brown-dark); text-align:center; line-height:1.3; }
+.special-sub { font-size:14px; color:var(--brown-mid); text-align:center; }
+.special-score { font-size:36px; font-weight:bold; color:var(--gold); text-align:center; }
+.party-display { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:36px; }
+.btn-menu { background:rgba(255,255,255,0.8); border:2px solid var(--brown-light); color:var(--brown-dark); font-size:15px; font-weight:bold; padding:12px 32px; border-radius:24px; cursor:pointer; width:100%; max-width:280px; text-align:center; }
+
+/* MISC */
+.mt8 { margin-top:8px; }
+.text-center { text-align:center; }
+.phase-label { font-size:11px; font-weight:bold; color:var(--brown-mid); background:var(--brown-pale); padding:3px 12px; border-radius:12px; display:inline-block; margin-bottom:6px; }
+@keyframes correctPop { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+.shake { animation:shake 0.4s ease; }
+.score-pop { position:fixed; font-size:20px; font-weight:bold; color:var(--gold); pointer-events:none; z-index:200; animation:scoreFly 1.2s ease forwards; }
+@keyframes scoreFly { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.3)} }
+.dialog-tap-hint { text-align:center; font-size:11px; color:var(--brown-mid); padding:6px 0; cursor:pointer; animation:pulse 1.2s ease-in-out infinite; user-select:none; -webkit-user-select:none; }
+@keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:1} }
+.char-big-img { width:80px; height:80px; border-radius:50%; object-fit:cover; object-position:top center; border:3px solid var(--brown-light); filter:drop-shadow(2px 3px 6px rgba(0,0,0,0.2)); animation:charFloat 3s ease-in-out infinite; flex-shrink:0; }
+.char-big-img:last-child { animation-delay:1.5s; }
+.avatar-sm { width:40px; height:40px; border-radius:50%; object-fit:cover; object-position:top center; border:2px solid var(--brown-light); flex-shrink:0; background:var(--brown-pale); }
+</style>
+</head>
+<body>
+
+<div id="screen-opening" class="screen active">
+  <div class="special-screen" style="padding-top:20px">
+    <div style="text-align:center">
+      <div class="opening-badge">知育謎解きRPG</div>
+      <div class="opening-title">アキオとパチョの<br>謎解きトラベラー</div>
+      <div class="opening-sub">縄文から江戸まで謎を解け！</div>
+    </div>
+    <div class="char-display">
+      <img src="akio.svg" class="char-big-img" alt="アキオ">
+      <img src="pacho.svg" class="char-big-img" alt="パチョ">
+    </div>
+    <div class="deco-line"></div>
+    <div class="op-bubbles">
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">パチョ！日本の歴史には謎がいっぱいだ！！一緒に解き明かそう！！</div></div>
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">はいはい。まずルール聞いてから叫んでくれ。パズルを解いてクイズに正解で仲間ゲットだ。</div></div>
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">ライフは❤️❤️❤️！ヒントは🦉フクロウ博士！でもスコアが半分になるぞ！！</div></div>
+    </div>
+    <div class="stage-list">
+      <div class="stage-item"><div class="si-num">1</div><div class="si-emoji">🏺</div><div class="si-era">縄文・弥生時代</div></div>
+      <div class="stage-item"><div class="si-num">2</div><div class="si-emoji">🦅</div><div class="si-era">飛鳥・奈良時代</div></div>
+      <div class="stage-item"><div class="si-num">3</div><div class="si-emoji">🌸</div><div class="si-era">平安時代</div></div>
+      <div class="stage-item"><div class="si-num">4</div><div class="si-emoji">⚔️</div><div class="si-era">鎌倉時代</div></div>
+      <div class="stage-item"><div class="si-num">5</div><div class="si-emoji">🏯</div><div class="si-era">室町・戦国時代</div></div>
+      <div class="stage-item"><div class="si-num">6</div><div class="si-emoji">🎋</div><div class="si-era">江戸時代</div></div>
+    </div>
+    <button class="btn-start" onclick="startGame()">冒険を始める！</button>
+    <a href="quiz-genre.html" style="font-size:13px;color:var(--brown-mid);text-decoration:none;">← ジャンル選択に戻る</a>
+  </div>
+</div>
+
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="gh-top">
+      <div class="gh-stage-info" id="stage-label">ステージ 1 / 6</div>
+      <div class="gh-lives" id="lives-display">❤️❤️❤️</div>
+    </div>
+    <div class="gh-bottom">
+      <div class="gh-score">スコア <span id="score-display">0</span></div>
+      <button class="hint-btn" id="hint-btn" onclick="useHint()">🦉 ヒント</button>
+    </div>
+  </div>
+  <div class="party-bar"><div class="party-label">仲間：</div><div class="party-members" id="party-members"></div></div>
+  <div class="game-content" id="game-content"></div>
+</div>
+
+<div id="screen-clear" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji" id="clear-emoji">🎉</div>
+    <div class="special-title" id="clear-title">ステージクリア！</div>
+    <div class="op-bubbles" id="clear-bubbles" style="width:100%;max-width:380px"></div>
+    <div class="party-display" id="clear-party"></div>
+    <div class="special-score" id="clear-score"></div>
+    <button class="btn-next" id="btn-clear-next">次のステージへ →</button>
+    <button class="btn-menu" onclick="goMenu()">← タイトルに戻る</button>
+  </div>
+</div>
+
+<div id="screen-gameover" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji">💀</div>
+    <div class="special-title">ゲームオーバー</div>
+    <div class="op-bubbles" style="width:100%;max-width:380px">
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">…まあ、最初はみんなそんなもんだよ。</div></div>
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">くぅ〜！歴史の神様、もう一度チャンスを！！</div></div>
+    </div>
+    <div class="special-score" id="go-score"></div>
+    <button class="btn-start" onclick="startGame()">もう一度挑戦！</button>
+    <button class="btn-menu" onclick="goMenu()">← タイトルに戻る</button>
+  </div>
+</div>
+
+<div id="screen-result" class="screen">
+  <div class="special-screen">
+    <div class="special-emoji">🏆</div>
+    <div class="special-title">全ステージ制覇！</div>
+    <div class="op-bubbles" style="width:100%;max-width:380px">
+      <div class="op-bubble"><span class="op-bubble-avatar"><img src="akio.svg" class="avatar-sm" alt="アキオ"></span><div class="op-bubble-text">やった！日本史の謎を全部解いたぞ！！！</div></div>
+      <div class="op-bubble right"><span class="op-bubble-avatar"><img src="pacho.svg" class="avatar-sm" alt="パチョ"></span><div class="op-bubble-text">素直に認める。よくやった。…ちょっとだけな。</div></div>
+    </div>
+    <div class="special-sub">集めた仲間たち</div>
+    <div class="party-display" id="result-party"></div>
+    <div class="special-score" id="result-score"></div>
+    <button class="btn-start" onclick="startGame()">もう一度遊ぶ</button>
+    <button class="btn-menu" onclick="goMenu()">← ジャンル選択に戻る</button>
+  </div>
+</div>
+
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-card">
+    <div class="feedback-emoji" id="fb-emoji"></div>
+    <div class="feedback-title" id="fb-title"></div>
+    <div class="feedback-sub" id="fb-sub"></div>
+    <div class="feedback-member" id="fb-member"></div>
+    <div class="feedback-member-name" id="fb-member-name"></div>
+    <div class="feedback-score" id="fb-score"></div>
+    <button class="btn-next" onclick="closeFeedback()">続ける →</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  STAGE DATA  各ステージ5種類のパズルからランダム選択
+// ============================================================
+const STAGES = [
+  {
+    id:1, era:"縄文・弥生時代", emoji:"🏺", bgColor:"rgba(180,130,70,0.08)",
+    member:{ emoji:"🧙", name:"シャーマン", msg:"精霊の力を貸すぞ！" },
+    openingDialogs:[
+      {who:"akio", text:"縄文！弥生！土器！土偶！！言いたいことが多すぎてどうにかなりそう！！"},
+      {who:"pacho", text:"どうにかなる前に問題解け。"},
+      {who:"akio", text:"うおー！！やるぞー！！！"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"弥生時代、溝（濠）で周囲を囲んだ防衛型の集落を何という？タイルを並べて答えよ！",
+        chars:["か","ん","ご","う"], answer:["か","ん","ご","う"],
+        displayAnswer:"環濠（かんごう）集落",
+        explanation:"環濠集落（かんごうしゅうらく）！濠で集落を囲み外敵から守った。吉野ヶ里遺跡が代表例で、戦争と身分差の証拠が残る入試頻出遺跡だ。",
+        quiz:{ question:"環濠集落（弥生時代）の特徴として最も正しいものはどれか？",
+          options:["溝で集落を囲んで防衛した居住形態で、戦争・身分差の存在を示す証拠","縄文時代に祭祀のために聖域を区切った神聖施設","奈良時代に律令国家が農民管理のために整備した行政施設","平安時代に貴族が荘園管理のために設けた拠点"],
+          correct:0, explanation:"環濠集落は弥生時代の戦争と身分差の証拠！吉野ヶ里遺跡（佐賀）が代表例。溝・物見やぐら・大型建物の存在が「クニ」の形成と支配層の誕生を示している。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"弥生時代に大陸から伝来し社会を一変させた農業技術の名前。緑の目標に合わせて3文字を作れ！",
+        word:["い","な","さ"], cols:2, rows:2,
+        hint_word:"稲作（いなさく）",
+        explanation:"いなさく＝稲作！大陸から北九州に伝わり東へ拡大。余剰生産→貯蓄→貧富の差→身分差→首長の誕生という社会変化の連鎖を生んだ。",
+        quiz:{ question:"弥生時代に稲作が普及したことで生じた社会変化として最も正しいものはどれか？",
+          options:["余剰生産物の蓄積により貧富の差・身分差が形成され「クニ」が成立した","全員が平等に食料を分配する共産的な社会が実現した","農耕の普及で戦争がなくなり環濠集落は消滅した","文字が広まり法律が整備されて統一国家が成立した"],
+          correct:0, explanation:"稲作普及→余剰生産物→貯蓄格差→貧富の差→身分差（首長と民）→「クニ」の成立という流れが入試の核心！環濠集落の拡大は逆に戦争の激化を示している。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは佐賀県神埼郡にある弥生時代最大級の遺跡だ。環濠・物見やぐら・大型建物が確認され「クニ」の中心地と考えられ、邪馬台国との関係も議論される。わたしはどの遺跡？",
+        choices:["吉野ヶ里遺跡","三内丸山遺跡","登呂遺跡","板付遺跡"], correctIdx:0,
+        explanation:"吉野ヶ里遺跡（よしのがりいせき）！佐賀県。弥生時代の大規模な環濠集落で戦争・権力・祭祀の痕跡が残る。三内丸山は縄文時代（青森）、登呂は弥生時代の農耕遺跡（静岡）。",
+        quiz:{ question:"弥生時代の社会変化として最も正しいものはどれか？",
+          options:["稲作の普及で余剰生産物が生まれ貧富の差・身分差が形成されクニが成立した","全員が平等に食料を分配する平和な共同社会が実現した","青銅器のみが使用されて鉄器は一切使用されなかった","文字が普及して法律が整備され統一国家が成立した"],
+          correct:0, explanation:"稲作普及→余剰生産→貧富の差→身分差→クニ成立の流れが弥生時代の核心！吉野ヶ里遺跡はその物証だ。環濠集落の拡大が戦争の激化を、大型建物が支配者の存在を示している。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは縄文時代に作られた土の人形だ。魔よけや豊作祈願などの祭祀目的に使われ独特のフォルムが特徴だ。弥生時代には作られなくなり代わりに銅鐸などの青銅器が祭祀に使われた。わたしは何？",
+        choices:["土偶","埴輪","銅鐸","土師器"], correctIdx:0,
+        explanation:"土偶（どぐう）！縄文時代の祭祀用土製品。女性をかたどったものが多く魔よけや豊作祈願に使われた。弥生時代には銅鐸が、古墳時代には埴輪が後継となった。",
+        quiz:{ question:"縄文時代の説明として最も正しいものはどれか？",
+          options:["定住しながら狩猟・採集・漁を中心とした生活を営んだ","稲作が普及して余剰食料の蓄積が始まった","青銅器を使用した祭祀が行われた","豪族による土地支配が確立された"],
+          correct:0, explanation:"縄文時代は稲作前の狩猟・採集・漁の時代！定住はしていたが農耕はなかった。稲作→弥生時代、青銅器→弥生時代、豪族支配→古墳〜飛鳥時代だ。縄文の特徴は土器・土偶・貝塚だ。" } },
+      { type:"spotthediff", label:"🕵️ 間違え探し",
+        instruction:"歴史的に間違っている【 】をタップしよう！",
+        context:"次の文の中で間違いはどこ？",
+        segments:[
+          {text:"弥生時代には", click:false},
+          {text:"稲作", click:true, wrong:false},
+          {text:"が広まり、", click:false},
+          {text:"銅鐸・銅剣", click:true, wrong:false},
+          {text:"などの青銅器と", click:false},
+          {text:"金器", click:true, wrong:true},
+          {text:"が祭祀や武器として使用された。", click:false}
+        ],
+        explanation:"弥生時代に使用されたのは青銅器と鉄器！金器（金製品）は使用されていない。青銅器は祭祀用、鉄器は農工具・武器として普及した点を区別しよう。" }
+    ],
+    quiz:{ question:"弥生時代の社会変化として最も正しく述べたものはどれか？",
+      options:["稲作の普及により余剰生産物が蓄積され、貧富の差と身分差が生まれた","全ての人が平等に土地を所有する平和な氏族社会が実現した","鉄器の普及のみが社会変化の要因であり稲作の影響は小さかった","農耕が始まったことで戦争はなくなり環濠集落は消滅した"],
+      correct:0, explanation:"稲作普及→余剰生産物の蓄積→貧富の差→支配者（首長）と被支配者の身分差→「クニ」の成立という流れが入試の核心！" },
+    clearDialogs:[
+      {who:"akio", text:"シャーマン仲間になった！！受験合格祈ってもらおう！！"},
+      {who:"pacho", text:"効くかは知らん。次いくぞ。"}
+    ],
+    hint:"稲作普及→余剰生産→貧富の差・身分差という社会変化の連鎖を考えよ🦉"
+  },
+  {
+    id:2, era:"飛鳥・奈良時代", emoji:"🦅", bgColor:"rgba(100,120,180,0.08)",
+    member:{ emoji:"🏛️", name:"僧侶", msg:"仏の教えで道を照らそう！" },
+    openingDialogs:[
+      {who:"pacho", text:"今度は飛鳥奈良だ。アキオ、また発狂するか？"},
+      {who:"akio", text:"しない！！…大仏でか！！ごめん発狂した！！"},
+      {who:"pacho", text:"予想通りだ。問題やるぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"645年に蘇我入鹿を暗殺して始まった政治改革「□□の改新」の□□を並べよ！",
+        chars:["た","い","か"], answer:["た","い","か"],
+        displayAnswer:"大化（たいか）の改新",
+        explanation:"大化の改新（645年）！中大兄皇子・中臣鎌足が蘇我入鹿を暗殺（乙巳の変）。公地公民制を目指し律令国家の基礎を作った歴史的転換点だ。",
+        quiz:{ question:"大化の改新（645年）で廃止が目指された体制として最も正しいものはどれか？",
+          options:["豪族による私有地・私有民（私地私民）の支配体制","班田収授法による口分田の国家管理体制","律令制に基づく租庸調の徴収体制","律令に基づく国郡里制の地方行政体制"],
+          correct:0, explanation:"大化の改新の核心は私地私民の廃止と公地公民制の確立！豪族が私有していた土地（私地）と人民（私民）を廃止し、土地と人民を国家（天皇）が直接支配する体制への転換を目指した。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"律令制の根幹をなす三大税制度の名前の最初3文字を、緑の目標に合わせて作れ！",
+        word:["そ","よ","う"], cols:2, rows:2,
+        hint_word:"租庸調（そようちょう）",
+        explanation:"租庸調（そようちょう）！律令制の根幹をなす税制。租＝口分田への稲、庸＝労役代替の布・米、調＝地方特産物。農民には兵役（防人・衛士）も課された。",
+        quiz:{ question:"律令制の「租庸調」のうち「庸」の説明として正しいものはどれか？",
+          options:["中央への労役の代わりに布・米を納める税","口分田に賦課される稲を納める税","地方の絹・糸・塩などの特産物を納める税","兵役として防人・衛士として奉仕する義務"],
+          correct:0, explanation:"租庸調の区別は入試最頻出！租＝口分田への稲（地租的性格）、庸＝労役または布・米で代替、調＝地方の特産物。農民への多重負担が逃亡・浮浪民を生んだ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは701年に完成した日本初の本格的律令だ。刑部親王・藤原不比等らが編纂し、唐の律令を参考に日本の実情に合わせて作られた。文武天皇の時代に施行された。わたしは何律令？",
+        choices:["大宝律令","養老律令","近江令","飛鳥浄御原令"], correctIdx:0,
+        explanation:"大宝律令（701年）！律（刑法）と令（行政法）を体系化した最初の本格的律令。養老律令は757年施行。近江令・飛鳥浄御原令は未完成・部分施行にとどまった。",
+        quiz:{ question:"大宝律令（701年）に関して最も正しいものはどれか？",
+          options:["刑部親王・藤原不比等が編纂した日本初の本格的律令で文武天皇の時代に施行","聖武天皇が社会不安を鎮めるために制定した仏教関連の法典","源頼朝が武家社会の慣習を成文化して制定した武家法典","藤原道長が摂関政治の基盤として整備した公家向けの法典"],
+          correct:0, explanation:"大宝律令は刑部親王・藤原不比等が中心となり701年に完成した日本初の本格的律令！文武天皇時代に施行。養老律令（718年編纂・757年施行）は藤原不比等の死後に完成した後継律令だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは奈良時代の天皇だ。疫病や反乱など社会不安が続く中、仏教の力で国を安定させようと全国に国分寺・国分尼寺を建立させた。都には東大寺を建て盧舎那仏（大仏）を造立させた。わたしは誰？",
+        choices:["聖武天皇","元明天皇","桓武天皇","天武天皇"], correctIdx:0,
+        explanation:"聖武天皇（しょうむてんのう）！奈良時代の天皇。東大寺の大仏造立を命じ鎮護国家（仏教で国を護る）を目指した。元明天皇は710年に平城京に遷都、桓武天皇は794年に平安京に遷都した。",
+        quiz:{ question:"聖武天皇が東大寺の大仏を造立した目的として最も正しいものはどれか？",
+          options:["疫病・反乱などの社会不安を仏教の力で鎮め国家を安定させるため","遣唐使の派遣を記念して仏教文化の発展を内外に誇示するため","藤原不比等の功績を称えて律令国家の安定を祝うため","大陸からの軍事的脅威に対して神仏の加護を求めるため"],
+          correct:0, explanation:"聖武天皇の大仏造立は鎮護国家の思想！疫病（天然痘流行）・反乱（藤原広嗣の乱）などの社会不安を仏教の力で鎮めようとした。「奈良の大仏＝聖武天皇＝鎮護国家」を必ずセットで覚えよう！" } },
+      { type:"spotthediff", label:"🕵️ 間違え探し",
+        instruction:"歴史的に間違っている【 】をタップしよう！",
+        context:"次の文の中で間違いはどこ？",
+        segments:[
+          {text:"701年に", click:false},
+          {text:"大宝律令", click:true, wrong:false},
+          {text:"が制定され、", click:false},
+          {text:"藤原不比等", click:true, wrong:false},
+          {text:"らが編纂した。この律令を施行したのは", click:false},
+          {text:"聖武天皇", click:true, wrong:true},
+          {text:"の時代である。", click:false}
+        ],
+        explanation:"大宝律令（701年）を施行したのは文武天皇！聖武天皇は次の代（724〜749年）で東大寺大仏建立を命じた。年代と天皇名の対応は入試頻出なので確実に区別しよう。" }
+    ],
+    quiz:{ question:"大化の改新（645年）で廃止が目指された制度として最も正しいものはどれか？",
+      options:["豪族による私有地・私有民（私地私民）の支配","班田収授法による口分田の国家支給","律令制に基づく租庸調の徴収","国分寺・国分尼寺の建立制度"],
+      correct:0, explanation:"大化の改新の核心は私地私民の廃止と公地公民制の確立！" },
+    clearDialogs:[
+      {who:"akio", text:"僧侶！！仏の力でパチョを猫から人間に戻してもらう！！"},
+      {who:"pacho", text:"猫で困ってない。次、平安時代行くぞ。"}
+    ],
+    hint:"大化の改新前の私地私民（豪族支配）と、改新が目指した公地公民の違いを考えよ🦉"
+  },
+  {
+    id:3, era:"平安時代", emoji:"🌸", bgColor:"rgba(220,150,180,0.08)",
+    member:{ emoji:"👘", name:"姫", msg:"和歌で道を切り拓くわ！" },
+    openingDialogs:[
+      {who:"akio", text:"平安！！雅！！道長めちゃくちゃ調子乗ってる！！でも好き！！"},
+      {who:"pacho", text:"望月の歌を諳んじてみろ。"},
+      {who:"akio", text:"この世をば…あとは！！"},
+      {who:"pacho", text:"わが世とぞ思ふ、だ。行くぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"藤原氏が摂政・関白として天皇の外戚となり権力を独占した政治体制「□□□□政治」の□□□□を並べよ！",
+        chars:["せ","っ","か","ん"], answer:["せ","っ","か","ん"],
+        displayAnswer:"摂関（せっかん）政治",
+        explanation:"摂関政治（せっかんせいじ）！藤原良房が初の摂政、基経が初の関白。道長「望月の歌」の1018年が最盛期。頼通の宇治平等院建立後、後三条天皇の親政で衰退した。",
+        quiz:{ question:"摂関政治の説明として最も正しいものはどれか？",
+          options:["藤原氏が天皇の外戚として摂政・関白の地位につき政権を独占した体制","天皇が退位後に上皇として院庁から政治を行った体制","武士が征夷大将軍として朝廷と独立した政権を運営した体制","守護・地頭を通じて武家が地方を支配した幕府体制"],
+          correct:0, explanation:"摂関政治！藤原良房（初の摂政）→基経（初の関白）→道長（絶頂・1018年）→頼通（平等院建立・1053年）で衰退。外戚支配の典型例として必修だ！" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"平安後期に台頭し保元・平治の乱で力を示した武士の集団組織を何という？最初3文字を作れ！",
+        word:["ぶ","し","だ"], cols:2, rows:2,
+        hint_word:"武士団（ぶしだん）",
+        explanation:"武士団（ぶしだん）！平安後期、源氏・平氏などが台頭。保元の乱（1156年）・平治の乱（1159年）を経て平清盛が台頭。武士が政治の実権を握る時代への橋渡しとなった。",
+        quiz:{ question:"平安後期の武士台頭に関して正しいものはどれか？",
+          options:["保元の乱（1156年）・平治の乱（1159年）を経て平清盛が政治の実権を握った","源頼朝が平安時代に京都に武家政権を樹立した","藤原道長が武士を動員して摂関政治を確立した","白河上皇が武士の台頭を完全に抑制することに成功した"],
+          correct:0, explanation:"保元・平治の乱で武士が朝廷の権力闘争に動員され力を蓄えた！平清盛は太政大臣に就任し武士初の権力者となった。源頼朝の鎌倉幕府はその後の1185〜1192年だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1086年、子の堀河天皇に譲位した後も上皇として政治の実権を握り続けた。これにより藤原氏の摂関政治は実質的に終わりを告げた。「天下三不如意」を嘆いたとされる。わたしは誰？",
+        choices:["白河上皇","後三条天皇","鳥羽上皇","後白河上皇"], correctIdx:0,
+        explanation:"白河上皇（しらかわじょうこう）！1086年に院政を開始。「天下三不如意（賀茂川の水・双六の賽・山法師）」が有名。後三条天皇は摂関政治を抑えた先駆だが院政の確立者は白河だ。",
+        quiz:{ question:"院政（1086年〜）の特徴として最も正しいものはどれか？",
+          options:["退位した天皇（上皇・法皇）が院庁を通じて政治の実権を握り続けた体制","藤原氏が摂政・関白として天皇の代わりに政務を行った体制","武士が征夷大将軍として朝廷から独立した政権を持った体制","守護・地頭が地方を支配した武家政権の体制"],
+          correct:0, explanation:"院政は白河上皇が1086年に確立！退位後も上皇（または法皇）として院庁で政治を主導した。摂関政治（藤原氏が摂政・関白として権力を握る）との明確な区別が入試頻出！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは平安時代の公家で、三人の娘を次々と天皇の后にして外戚となった。「この世をば我が世とぞ思ふ望月の 欠けたることもなしと思へば」と詠んだことで有名だ。わたしは誰？",
+        choices:["藤原道長","藤原頼通","藤原良房","藤原基経"], correctIdx:0,
+        explanation:"藤原道長（ふじわらのみちなが）！平安時代の摂関政治の絶頂を作った人物。1018年三后並立の宴で「望月の歌」を詠んだ。頼通は息子で平等院鳳凰堂（1053年）建立者だ。",
+        quiz:{ question:"藤原道長の政治的立場として最も正しいものはどれか？",
+          options:["天皇の外戚として摂政に就任し「この世は我が世」と詠んだ摂関政治の絶頂者","征夷大将軍として武士を統率し朝廷と独立した政権を確立した","1086年に院政を開始して摂関政治を終わらせた上皇","鳥羽上皇のもとで院政を補佐する院司の筆頭として活躍した"],
+          correct:0, explanation:"道長は1016年に摂政就任！三人の娘（彰子・妍子・威子）を后にして外戚として権力を独占した。1018年の望月の歌は摂政時代。関白には就かず、院政は後の白河上皇が始める。" } },
+      { type:"spotthediff", label:"🕵️ 間違え探し",
+        instruction:"歴史的に間違っている【 】をタップしよう！",
+        context:"次の文の中で間違いはどこ？",
+        segments:[
+          {text:"藤原道長は", click:false},
+          {text:"三人の娘", click:true, wrong:false},
+          {text:"を天皇の后として外戚となり、", click:false},
+          {text:"1016年", click:true, wrong:false},
+          {text:"に摂政に就任し、「この世をば我が世とぞ思ふ」と詠んだのは", click:false},
+          {text:"関白", click:true, wrong:true},
+          {text:"就任の翌年のことだ。", click:false}
+        ],
+        explanation:"道長が「望月の歌」を詠んだ1018年時点での地位は摂政！1016年に摂政就任、関白には就任せず、1018年には三后並立（彰子・妍子・威子）の宴でこの歌を詠んだ。" }
+    ],
+    quiz:{ question:"1086年に院政を開始し、摂関政治を実質的に終わらせた上皇は誰か？",
+      options:["白河上皇","後三条上皇","鳥羽上皇","後白河上皇"],
+      correct:0, explanation:"白河上皇が1086年に院政を開始！後三条天皇は院政の先駆けだが確立者は白河だ！" },
+    clearDialogs:[
+      {who:"akio", text:"姫！！一句詠んでくれ！！"},
+      {who:"pacho", text:"次の問題を詠め。鎌倉だ。"}
+    ],
+    hint:"摂関政治の終焉と院政の確立。1086年、白河上皇が鍵だ🦉"
+  },
+  {
+    id:4, era:"鎌倉時代", emoji:"⚔️", bgColor:"rgba(80,80,80,0.06)",
+    member:{ emoji:"🗡️", name:"侍", msg:"武士道で前を切り拓く！" },
+    openingDialogs:[
+      {who:"akio", text:"鎌倉！！元寇！！御家人つら！！"},
+      {who:"pacho", text:"主語がバラバラだ。"},
+      {who:"akio", text:"パチョも武士になれ！！"},
+      {who:"pacho", text:"猫は武士にはなれん。問題行くぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"北条氏が代々世襲し将軍を名目的存在にして幕府の実権を握った地位「□□□□」を並べよ！",
+        chars:["し","っ","け","ん"], answer:["し","っ","け","ん"],
+        displayAnswer:"執権（しっけん）",
+        explanation:"執権（しっけん）！北条氏が世襲した将軍補佐役。義時・泰時・時宗らが代々執権を務め、将軍を名目上の存在にして実権を掌握した「執権政治」の核心だ。",
+        quiz:{ question:"鎌倉幕府の執権政治に関する説明として最も正しいものはどれか？",
+          options:["北条氏が将軍を名目的存在として実権を掌握し、承久の乱後に六波羅探題を設置した","御家人全体から選出され将軍を補佐した合議制の役職","朝廷が任命した官職で全国の武士を一元管理した","将軍と対等な立場で幕府政治を分担した補佐機関"],
+          correct:0, explanation:"執権政治！北条義時が確立、泰時が御成敗式目（1232年）を制定。承久の乱（1221年）後に六波羅探題を設置して朝廷監視も完成。将軍は親王・摂家から迎えた名目上の存在になった。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"1274年・1281年と2度にわたった元の日本侵攻の呼び名の最初3文字を作れ！",
+        word:["げ","ん","こ"], cols:2, rows:2,
+        hint_word:"元寇（げんこう）",
+        explanation:"元寇（げんこう）！1274年文永の役・1281年弘安の役。8代執権北条時宗が撃退。しかし恩賞不足で御家人の不満が蓄積し、幕府衰退の一因となった。",
+        quiz:{ question:"元寇（1274・1281年）が鎌倉幕府に与えた影響として最も正しいものはどれか？",
+          options:["御家人への恩賞が不十分で御家人の不満が蓄積し幕府衰退の一因となった","勝利の恩賞が十分に与えられ御家人の幕府への忠誠心が高まった","元との国交が回復し日元貿易により鎌倉文化が発展した","元の撃退が幕府の権威を高め武家政権が安定強化された"],
+          correct:0, explanation:"元寇後の恩賞問題が幕府衰退の核心！異国征伐で新たな土地が得られず御家人への恩賞が出せなかった。御家人の困窮→永仁の徳政令（1297年）→御家人のさらなる離反という流れが続く。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1221年、後鳥羽上皇が幕府打倒を企て発した院宣により始まった乱だ。北条政子の演説が御家人を鼓舞し、わずか1か月で幕府軍が勝利。上皇は隠岐に流された。乱後に六波羅探題が設置された。この乱は？",
+        choices:["承久の乱","保元の乱","平治の乱","応仁の乱"], correctIdx:0,
+        explanation:"承久の乱（じょうきゅうのらん・1221年）！後鳥羽上皇の幕府打倒計画が失敗。乱後、上皇は流罪、幕府は六波羅探題を設置して朝廷監視・西国支配を強化した。",
+        quiz:{ question:"承久の乱（1221年）後の幕府の措置として最も正しいものはどれか？",
+          options:["六波羅探題を設置して朝廷を監視し西国の御家人を統括した","後鳥羽上皇を処刑して皇室の影響力を完全に排除した","幕府を京都に移して朝廷と一体化した政治体制を作った","朝廷に謝罪して承久の乱の責任者を武士から出さなかった"],
+          correct:0, explanation:"承久の乱後の六波羅探題設置が最重要！京都六波羅に設置し朝廷監視と西国御家人統括を担った。後鳥羽上皇は処刑ではなく隠岐に流罪。幕府は京都に移さず鎌倉に残った。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1232年に3代執権北条泰時が制定した法典だ。51か条からなり武家社会の慣習・道理を成文化した。貞永式目とも呼ばれ、その後の武家法典の手本となった。わたしは何？",
+        choices:["御成敗式目","武家諸法度","禁中並公家諸法度","分国法"], correctIdx:0,
+        explanation:"御成敗式目（ごせいばいしきもく・1232年）！北条泰時制定の51か条。武家の慣習と道理を成文化した日本初の武家法典。貞永式目とも呼ばれる。武家諸法度は江戸幕府（徳川秀忠）が1615年に制定。",
+        quiz:{ question:"御成敗式目（1232年）に関して最も正しいものはどれか？",
+          options:["武家社会の慣習・道理を51か条に成文化した日本初の武家法典","朝廷が公家・僧侶を統制するために制定した宮廷行動規範","足利尊氏が室町幕府設立時に大名統制のために定めた法典","徳川家康が全国の武士を統制するために制定した武家諸法度"],
+          correct:0, explanation:"御成敗式目は武家初の成文法典！51か条・北条泰時・1232年・道理と慣習の成文化がセット。武家諸法度は江戸幕府（1615年）、禁中並公家諸法度（1615年）は朝廷・公家の統制法。" } },
+      { type:"spotthediff", label:"🕵️ 間違え探し",
+        instruction:"歴史的に間違っている【 】をタップしよう！",
+        context:"次の文の中で間違いはどこ？",
+        segments:[
+          {text:"1232年に3代執権", click:false},
+          {text:"北条泰時", click:true, wrong:false},
+          {text:"が制定した", click:false},
+          {text:"御成敗式目", click:true, wrong:false},
+          {text:"は", click:false},
+          {text:"33", click:true, wrong:true},
+          {text:"か条からなる武家最初の法典だ。", click:false}
+        ],
+        explanation:"御成敗式目は51か条！33か条ではない。武家社会の慣習・道理を成文化した日本初の武家法典で、条数（51か条）は入試頻出。貞永式目とも呼ばれる。" }
+    ],
+    quiz:{ question:"承久の乱（1221年）後に幕府が京都に設置した機関はどれか？",
+      options:["六波羅探題","鎮西探題","問注所","評定衆"],
+      correct:0, explanation:"六波羅探題！承久の乱後に京都六波羅に設置。朝廷監視と西国御家人統括が役割だ！" },
+    clearDialogs:[
+      {who:"akio", text:"侍！！一緒に元寇倒しに行こうぜ！！"},
+      {who:"pacho", text:"元寇はもう倒した。700年以上前に。"},
+      {who:"akio", text:"そっか！！"}
+    ],
+    hint:"承久の乱後、幕府が朝廷監視のために京都六波羅に設置した機関を考えよ🦉"
+  },
+  {
+    id:5, era:"室町・戦国時代", emoji:"🏯", bgColor:"rgba(120,80,40,0.07)",
+    member:{ emoji:"🥷", name:"忍者", msg:"影から仲間を守るぜ！" },
+    openingDialogs:[
+      {who:"akio", text:"戦国！！信長秀吉家康！！誰が一番好き！！"},
+      {who:"pacho", text:"好みで歴史を語るな。"},
+      {who:"akio", text:"家康かな！！長生きしたもん勝ち！！"},
+      {who:"pacho", text:"まあ間違ってはいない。問題行くぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"応仁の乱後に広がった「下位が上位を実力で倒す」時代の風潮を表す言葉の最初4文字を並べよ！",
+        chars:["く","こ","げ","じ"], answer:["げ","こ","く","じ"],
+        displayAnswer:"下剋上（げこくじょう）",
+        explanation:"下剋上（げこくじょう）！応仁の乱後の室町時代を特徴づける概念。守護大名が家臣に打倒され戦国大名が台頭。各大名は分国法で領国を独自支配した。",
+        quiz:{ question:"下剋上の風潮が生まれた直接の背景として最も正しいものはどれか？",
+          options:["応仁の乱（1467〜1477年）後に室町幕府の権威が失墜し守護大名が戦国大名に打倒された","関ヶ原の戦い（1600年）で徳川家康が豊臣氏を破ったことで実力主義が定着した","承久の乱（1221年）で朝廷が敗北し権威が失墜して武士が台頭した","元寇（1274・1281年）の失敗で鎌倉幕府の権威が失墜したことで生まれた"],
+          correct:0, explanation:"下剋上の本番は応仁の乱後！守護大名→戦国大名への転換（例：斎藤道三・毛利元就）。11年に及ぶ戦乱が室町幕府の権威を地に落とし、下位が実力で上位を倒す時代が始まった。" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"1543年にポルトガル人が種子島に伝えた新兵器の名前の最初3文字を作れ！",
+        word:["て","っ","ぽ"], cols:2, rows:2,
+        hint_word:"鉄砲（てっぽう）",
+        explanation:"てっぽう＝鉄砲！1543年ポルトガル人が種子島に伝来。堺・国友などで国産化が進み、戦国大名が争って入手。長篠の戦いで信長が大規模活用した。",
+        quiz:{ question:"鉄砲（火縄銃）の伝来（1543年）に関する説明として最も正しいものはどれか？",
+          options:["ポルトガル人が種子島に漂着して伝来し堺・国友で国産化が進んだ","中国（明）の使節が室町幕府に献上し京都から全国に広まった","オランダ東インド会社が長崎出島に持ち込み九州の大名が最初に活用した","スペインのフランシスコ・ザビエルがキリスト教と同時に伝来させた"],
+          correct:0, explanation:"1543年ポルトガル人が種子島に漂着して伝来！堺・国友（近江）などで国産化。フランシスコ・ザビエルは1549年にキリスト教を伝えた別人。鉄砲とキリスト教の伝来を混同しないように！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1543年に種子島に漂着したポルトガル人によって日本に伝えられた兵器だ。1575年の長篠の戦いで織田信長が組織的に大量活用し武田勝頼の軍を破ったとされる。わたしは何？",
+        choices:["鉄砲（火縄銃）","大砲","弩（石弓）","投石機"], correctIdx:0,
+        explanation:"鉄砲（火縄銃）！1543年種子島伝来。長篠の戦いでの大規模活用が戦術革命をもたらした。三段撃ちの詳細は諸説あるが、組織的な鉄砲活用が戦国の戦術を根本から変えた。",
+        quiz:{ question:"1575年の長篠の戦いに関して最も正しいものはどれか？",
+          options:["織田信長・徳川家康の連合軍が鉄砲を組織的に活用して武田勝頼軍を破った","武田信玄が上杉謙信を川中島で撃破した戦いの別名","豊臣秀吉が武田氏を滅ぼして天下統一の基礎を固めた","今川義元が織田信長に奇襲されて敗死した戦いの別名"],
+          correct:0, explanation:"長篠の戦い（1575年）は信長・家康の連合軍vs武田勝頼！鉄砲の組織的活用が勝因とされる。川中島は上杉vs武田（1553〜64年）、桶狭間は信長vs今川義元（1560年）、秀吉の天下統一は1590年だ！" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは1467年に始まった大乱だ。足利将軍家の後継者問題と管領家の家督争いが絡み、東軍（細川勝元）と西軍（山名宗全）が11年間争った。京都を廃墟にし戦国時代の幕を開けた。わたしは何？",
+        choices:["応仁の乱","承久の乱","保元の乱","島原の乱"], correctIdx:0,
+        explanation:"応仁の乱（おうにんのらん・1467〜1477年）！東軍細川勝元vs西軍山名宗全が11年争い室町幕府の権威を地に落とした。承久の乱（1221年）は後鳥羽上皇vs幕府、保元の乱（1156年）は平安末期の乱だ。",
+        quiz:{ question:"応仁の乱（1467〜1477年）が日本の歴史に与えた影響として最も正しいものはどれか？",
+          options:["室町幕府の権威が失墜し守護大名が没落して下剋上・戦国時代が始まった","鎌倉幕府が滅亡し南北朝の対立が始まった","関ヶ原の戦いの前哨戦として豊臣氏が弱体化した","徳川家康が江戸幕府を開く直接の契機となった"],
+          correct:0, explanation:"応仁の乱後に室町幕府の権威が失墜し下剋上の時代が到来！守護大名→戦国大名への転換（斎藤道三・毛利元就など）が起き、分国法による領国支配が始まった。11年間＝1467〜1477年を確実に覚えよう。" } },
+      { type:"spotthediff", label:"🕵️ 間違え探し",
+        instruction:"歴史的に間違っている【 】をタップしよう！",
+        context:"次の文の中で間違いはどこ？",
+        segments:[
+          {text:"1467年に始まった", click:false},
+          {text:"応仁の乱", click:true, wrong:false},
+          {text:"は東軍", click:false},
+          {text:"細川勝元", click:true, wrong:false},
+          {text:"と西軍", click:false},
+          {text:"山名宗全", click:true, wrong:false},
+          {text:"が対立し、", click:false},
+          {text:"3年", click:true, wrong:true},
+          {text:"にわたって争い京都を廃墟にした。", click:false}
+        ],
+        explanation:"応仁の乱は11年間（1467〜1477年）続いた！3年ではない。この長期の戦乱が京都を廃墟にし、地方では守護大名が没落し戦国大名が台頭する下剋上の時代が始まった。" }
+    ],
+    quiz:{ question:"1575年の長篠の戦いに関する記述として正しいものはどれか？",
+      options:["織田信長・徳川家康の連合軍が鉄砲を大規模に活用して武田勝頼軍を破った","豊臣秀吉が武田信玄を騎馬戦で破り天下統一へ躍進した","上杉謙信と武田信玄が激突した川中島の戦いの別名である","今川義元が織田信長に奇襲され敗死した戦いである"],
+      correct:0, explanation:"長篠の戦い（1575年）は信長・家康の連合軍vs武田勝頼！鉄砲を組織的活用した。" },
+    clearDialogs:[
+      {who:"akio", text:"忍者！！ニンニン！！"},
+      {who:"pacho", text:"ニンニン言うな。最終ステージいくぞ。"},
+      {who:"akio", text:"ニン！！"},
+      {who:"pacho", text:"一回だけにしろって言ったぞ。"}
+    ],
+    hint:"長篠の戦い（1575年）の対戦カードと信長が活用した新兵器を考えよ🦉"
+  },
+  {
+    id:6, era:"江戸時代", emoji:"🎋", bgColor:"rgba(80,120,60,0.07)",
+    member:{ emoji:"🎭", name:"芸能人", msg:"歌舞伎の舞台で盛り上げるぞ！" },
+    openingDialogs:[
+      {who:"akio", text:"江戸！！265年も続いたってすごくない！？"},
+      {who:"pacho", text:"将軍が15人もいたからな。"},
+      {who:"akio", text:"多っ！！全員言えないわ！！"},
+      {who:"pacho", text:"8代吉宗さえ言えれば今日はいい。問題やるぞ。"}
+    ],
+    puzzles:[
+      { type:"sort", label:"🔤 タイルパズル",
+        instruction:"タイルを並べ替えて問題のテーマを完成させよう！",
+        question:"江戸幕府が外国との交流を大幅に制限した対外政策「□□□」を並べよ！",
+        chars:["さ","こ","く"], answer:["さ","こ","く"],
+        displayAnswer:"鎖国（さこく）",
+        explanation:"鎖国（さこく）！3代将軍徳川家光が完成。オランダ・清・朝鮮・琉球のみ交流を許可。長崎の出島がオランダ・清との窓口。キリスト教禁止・日本人の海外渡航禁止が柱だ。",
+        quiz:{ question:"江戸幕府の鎖国体制に関する説明として最も正しいものはどれか？",
+          options:["オランダ・清・朝鮮・琉球との交流を限定的に許可し長崎の出島がオランダとの窓口","すべての外国との交流を完全に遮断した純粋な鎖国体制","スペインを除くすべてのヨーロッパ諸国との貿易を継続した","中国への朝貢関係を公認し毎年使節を北京に送った"],
+          correct:0, explanation:"鎖国は完全禁止ではない！4つの窓口：オランダ・清→長崎（出島）、朝鮮→対馬藩、琉球→薩摩藩、蝦夷地→松前藩。この4窓口の組み合わせは入試最頻出！" } },
+      { type:"slide", label:"🎮 スライドパズル",
+        instruction:"タイルをスライドして問題のテーマを完成させよう！",
+        question:"鎖国下でオランダとの交易拠点となった長崎の扇形人工島の名前を作れ！",
+        word:["で","じ","ま"], cols:2, rows:2,
+        hint_word:"出島（でじま）",
+        explanation:"出島（でじま）！長崎に築造された扇形の人工島。オランダ東インド会社（VOC）との交易窓口。鎖国下でも西洋の情報が流入し蘭学の源泉となった。",
+        quiz:{ question:"長崎の出島に関する説明として最も正しいものはどれか？",
+          options:["鎖国下でオランダ東インド会社（VOC）との交易拠点となった扇形の人工島","キリスト教の布教を公認し宣教師が居住した長崎の教会施設","日本人が海外渡航する際の唯一の出国手続き場所","豊臣秀吉が朝鮮出兵（文禄・慶長の役）の兵站基地として整備した港"],
+          correct:0, explanation:"出島！1634年築造の扇形人工島。オランダ商館が置かれVOCとの交易窓口に。オランダ語経由の西洋知識（蘭学）の源泉となり杉田玄白らの解体新書（1774年）につながった。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは18世紀後半、田沼意次失脚後に老中となり寛政の改革を断行した人物だ。囲米・棄捐令・七分積金・異学の禁（昌平坂学問所で朱子学以外を禁止）を実施。「白河の清き…田沼恋しき」と庶民に風刺された。わたしは誰？",
+        choices:["松平定信","水野忠邦","田沼意次","徳川吉宗"], correctIdx:0,
+        explanation:"松平定信（まつだいらさだのぶ）！寛政の改革（1787〜1793年）。「白河の清きに魚も住みかねて もとの濁りの田沼恋しき」と詠まれた厳格な改革者だ。",
+        quiz:{ question:"寛政の改革（1787〜1793年）に関して最も正しいものはどれか？",
+          options:["松平定信が囲米・棄捐令・七分積金・異学の禁を実施した","徳川吉宗が上米の制・目安箱・公事方御定書を制定した","水野忠邦が株仲間解散・人返し令・上知令を実施した","田沼意次が株仲間を奨励し長崎貿易を振興した"],
+          correct:0, explanation:"「享保＝吉宗・寛政＝松平定信・天保＝水野忠邦」の三大改革の対応を必ず覚えよう！寛政改革の4本柱：囲米（米の備蓄義務）・棄捐令（旗本・御家人の借金帳消し）・七分積金・異学の禁だ。" } },
+      { type:"riddle", label:"🧩 謎解きクイズ",
+        instruction:"謎を解いて問題のテーマを導き出そう！",
+        riddle:"わたしは享保の改革を断行した江戸幕府の8代将軍だ。大名に石高1万石につき100石の米を上納させる制度を設け、庶民が直接幕府に意見を届けられる箱を設置した。「暴れん坊将軍」のモデルとされる。わたしは誰？",
+        choices:["徳川吉宗","松平定信","水野忠邦","徳川綱吉"], correctIdx:0,
+        explanation:"徳川吉宗（とくがわよしむね）！8代将軍。享保の改革（1716〜1745年）を主導。上米の制・目安箱・公事方御定書が代表的政策。吉宗＝享保の改革の対応は必須知識だ。",
+        quiz:{ question:"享保の改革で8代将軍徳川吉宗が実施した政策の組み合わせとして最も正しいものはどれか？",
+          options:["上米の制・目安箱の設置・公事方御定書の制定","棄捐令・囲米・七分積金・異学の禁","株仲間解散・人返し令・上知令","株仲間奨励・長崎貿易振興・蝦夷地開発"],
+          correct:0, explanation:"享保の改革（吉宗）の3大政策：①上米の制（大名に米を上納）②目安箱（庶民の意見聴取→小石川養生所設立につながった）③公事方御定書（裁判基準の成文化）。寛政（松平定信）・天保（水野忠邦）と混同しないように！" } },
+      { type:"spotthediff", label:"🕵️ 間違え探し",
+        instruction:"歴史的に間違っている【 】をタップしよう！",
+        context:"次の文の中で間違いはどこ？",
+        segments:[
+          {text:"8代将軍", click:false},
+          {text:"徳川吉宗", click:true, wrong:false},
+          {text:"の", click:false},
+          {text:"享保の改革", click:true, wrong:false},
+          {text:"では大名に石高1万石につき100石を上納させる", click:false},
+          {text:"上米の制", click:true, wrong:false},
+          {text:"と、庶民の意見を広く聞く", click:false},
+          {text:"投書箱", click:true, wrong:true},
+          {text:"が設置された。", click:false}
+        ],
+        explanation:"目安箱（めやすばこ）が正しい！投書箱ではない。吉宗が設置した目安箱は庶民が直接幕府に意見・訴えを届けられる制度で、小石川養生所の設立にもつながった入試頻出の政策だ。" }
+    ],
+    quiz:{ question:"享保の改革（1716〜1745年）の主導者と政策の組み合わせとして正しいものはどれか？",
+      options:["徳川吉宗―上米の制・目安箱の設置・公事方御定書の制定","松平定信―棄捐令・囲米・七分積金・異学の禁","水野忠邦―株仲間解散・人返し令・上知令","田沼意次―株仲間奨励・長崎貿易の振興"],
+      correct:0, explanation:"享保の改革は8代将軍徳川吉宗！上米の制・目安箱・公事方御定書が代表的政策だ！" },
+    clearDialogs:[
+      {who:"akio", text:"全部クリア！！日本史チャンピオン！！パチョ褒めて！！"},
+      {who:"pacho", text:"…よくやった。本当によくやった。ちょっとだけな。"},
+      {who:"akio", text:"ちょっとだけかよ！！でもうれしい！！！"}
+    ],
+    hint:"享保の改革の主導者（8代将軍）と上米の制・目安箱・公事方御定書を結びつけよ🦉"
+  }
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let state = {
+  currentStage:0, score:0, lives:3, party:[],
+  hintUsed:false, timerInterval:null, timerLeft:30,
+  puzzleSolvedFlag:false, quizAnswered:false,
+  sortAnswer:[], sortRemaining:[],
+  blankFilled:[], blankChoiceUsed:[],
+  slideTiles:[], slideCols:2, slideRows:2, slideMoves:0
+};
+
+// ============================================================
+//  SCREENS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goMenu() { clearTimer(); showScreen('screen-opening'); }
+
+function showDialogSequence(dialogs, container, onComplete, scrollEl) {
+  if(!dialogs||!dialogs.length){onComplete();return;}
+  const sc=scrollEl||container;
+  let idx=0;
+  function next(){
+    const d=dialogs[idx++];
+    container.appendChild(makeBubble(d.who,d.text));
+    setTimeout(()=>{sc.scrollTop=sc.scrollHeight;},50);
+    if(idx<dialogs.length){
+      const hint=document.createElement('div'); hint.className='dialog-tap-hint';
+      hint.textContent='タップで続く ▶'; hint.onclick=()=>{hint.remove();next();};
+      container.appendChild(hint);
+    } else { setTimeout(onComplete,600); }
+  }
+  next();
+}
+
+function startGame() {
+  state = { currentStage:0, score:0, lives:3, party:[], hintUsed:false,
+    timerInterval:null, timerLeft:30, puzzleSolvedFlag:false, quizAnswered:false,
+    currentPuzzleIndex:0,
+    sortAnswer:[], sortRemaining:[], blankFilled:[], blankChoiceUsed:[],
+    slideTiles:[], slideCols:2, slideRows:2, slideMoves:0 };
+  showScreen('screen-game');
+  loadStage(0);
+}
+
+function loadStage(idx) {
+  clearTimer();
+  const s = STAGES[idx];
+  state.hintUsed = false; state.puzzleSolvedFlag = false; state.quizAnswered = false; state.currentPuzzleIndex = 0;
+  document.getElementById('stage-label').textContent = `ステージ ${s.id}/${STAGES.length}  ${s.emoji} ${s.era}`;
+  updateLives(); updateScore(); updateParty();
+  document.getElementById('hint-btn').disabled = false;
+  const content = document.getElementById('game-content');
+  content.innerHTML = ''; content.style.background = s.bgColor;
+  const phaseEl = document.createElement('div');
+  phaseEl.className = 'text-center';
+  phaseEl.innerHTML = `<span class="phase-label">📜 問題 1/4</span>`;
+  content.appendChild(phaseEl);
+  const da = document.createElement('div'); da.className = 'dialog-area';
+  content.appendChild(da);
+  content.scrollTop = 0;
+  showDialogSequence(s.openingDialogs, da, ()=>{
+    content.appendChild(makePuzzle(s.puzzles[0]));
+    setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+  }, content);
+}
+
+// ============================================================
+//  BUBBLE
+// ============================================================
+function makeBubble(who, text) {
+  const div = document.createElement('div');
+  div.className = 'dialog-bubble' + (who === 'pacho' ? ' right' : '');
+  let av;
+  if(who==='akio') av=`<img src="akio.svg" class="avatar-sm" alt="アキオ">`;
+  else if(who==='pacho') av=`<img src="pacho.svg" class="avatar-sm" alt="パチョ">`;
+  else av='🦉';
+  div.innerHTML = `<span class="dialog-avatar">${av}</span><div class="dialog-text">${text}</div>`;
+  return div;
+}
+
+// ============================================================
+//  PUZZLE ROUTER
+// ============================================================
+function makePuzzle(p) {
+  const box = document.createElement('div');
+  box.className = 'puzzle-box'; box.id = 'puzzle-box';
+  switch(p.type) {
+    case 'sort':        box.appendChild(makeSortPuzzle(p)); break;
+    case 'blank':       box.appendChild(makeBlankPuzzle(p)); break;
+    case 'find-odd':    box.appendChild(makeFindOddPuzzle(p)); break;
+    case 'riddle':      box.appendChild(makeRiddlePuzzle(p)); break;
+    case 'cipher':      box.appendChild(makeCipherPuzzle(p)); break;
+    case 'slide':       box.appendChild(makeSlidePuzzle(p)); break;
+    case 'spotthediff': box.appendChild(makeSpotTheDiffPuzzle(p)); break;
+  }
+  return box;
+}
+
+function pTitle(frag, html) { const e=document.createElement('div'); e.className='puzzle-title'; e.innerHTML=html; frag.appendChild(e); }
+function pDesc(frag, txt)   { const e=document.createElement('div'); e.className='puzzle-desc'; e.textContent=txt; frag.appendChild(e); }
+
+// ============================================================
+//  SORT PUZZLE
+// ============================================================
+function makeSortPuzzle(p) {
+  const frag = document.createDocumentFragment();
+  pTitle(frag, p.label); pDesc(frag, p.instruction);
+  if (p.question) pDesc(frag, p.question);
+  const area = document.createElement('div'); area.className = 'sort-area';
+  const shuffled = [...p.chars].sort(() => Math.random() - 0.5);
+  state.sortRemaining = [...shuffled]; state.sortAnswer = [];
+  const ansLabel = document.createElement('div'); ansLabel.className='sort-slot-label';
+  ansLabel.textContent = `↑ ここに並べよう（全${p.answer.length}文字）`; area.appendChild(ansLabel);
+  const ansSlots = document.createElement('div'); ansSlots.className='sort-slots'; ansSlots.id='sort-answer-slots';
+  ansSlots.addEventListener('click', e => { const t=e.target.closest('.tile'); if(!t)return; removeTileFromAnswer(parseInt(t.dataset.idx)); renderSortPuzzle(p); });
+  area.appendChild(ansSlots);
+  const srcLabel = document.createElement('div'); srcLabel.className='sort-slot-label';
+  srcLabel.textContent='↓ タップして上に並べよう'; area.appendChild(srcLabel);
+  const srcSlots = document.createElement('div'); srcSlots.className='sort-slots'; srcSlots.id='sort-source-slots';
+  srcSlots.style.background='rgba(255,255,255,0.5)'; area.appendChild(srcSlots);
+  const checkBtn = document.createElement('button'); checkBtn.className='btn-check'; checkBtn.id='puzzle-check-btn';
+  checkBtn.textContent='答えを確認する'; checkBtn.disabled=true;
+  checkBtn.onclick = () => checkSortAnswer(p); area.appendChild(checkBtn);
+  frag.appendChild(area);
+  setTimeout(() => {
+    renderSortPuzzle(p);
+    document.getElementById('sort-source-slots')?.addEventListener('click', e => { const t=e.target.closest('.tile'); if(!t)return; addTileToAnswer(t.dataset.char,parseInt(t.dataset.idx)); renderSortPuzzle(p); });
+  }, 10);
+  return frag;
+}
+function renderSortPuzzle(p) {
+  const ans=document.getElementById('sort-answer-slots'), src=document.getElementById('sort-source-slots');
+  if(!ans||!src) return;
+  ans.innerHTML=''; state.sortAnswer.forEach((item,i)=>{ const t=document.createElement('div'); t.className='tile in-answer'; t.dataset.char=item.char; t.dataset.idx=i; t.textContent=item.char; ans.appendChild(t); });
+  src.innerHTML=''; state.sortRemaining.forEach((char,i)=>{ const t=document.createElement('div'); t.className='tile'; t.dataset.char=char; t.dataset.idx=i; t.textContent=char; src.appendChild(t); });
+  const btn=document.getElementById('puzzle-check-btn'); if(btn) btn.disabled=state.sortAnswer.length!==p.answer.length;
+}
+function addTileToAnswer(char,idx){ state.sortAnswer.push({char,origIdx:idx}); state.sortRemaining.splice(idx,1); }
+function removeTileFromAnswer(idx){ const item=state.sortAnswer.splice(idx,1)[0]; state.sortRemaining.push(item.char); }
+function checkSortAnswer(p){ const user=state.sortAnswer.map(a=>a.char); if(p.answer.every((ch,i)=>user[i]===ch)) puzzleSolved(p); else { shakeEl('sort-answer-slots'); showToast('もう一度並べ直してみよう！'); } }
+
+// ============================================================
+//  BLANK PUZZLE
+// ============================================================
+function makeBlankPuzzle(p) {
+  const frag = document.createDocumentFragment();
+  pTitle(frag, p.label); pDesc(frag, p.instruction);
+  if(p.question) pDesc(frag, p.question);
+  const area = document.createElement('div'); area.className='blank-area';
+  const sent = document.createElement('div'); sent.className='blank-sentence'; sent.id='blank-sentence';
+  state.blankFilled=new Array(p.blanks.length).fill(null); state.blankChoiceUsed=new Array(p.choices.length).fill(false);
+  renderBlank(p, sent); area.appendChild(sent);
+  const cd = document.createElement('div'); cd.className='choices-grid'; cd.id='blank-choices';
+  p.choices.forEach((ch,i)=>{ const btn=document.createElement('button'); btn.className='choice-btn'; btn.id=`choice-${i}`; btn.textContent=ch; btn.onclick=()=>fillBlank(ch,i,p); cd.appendChild(btn); });
+  area.appendChild(cd);
+  const ck=document.createElement('button'); ck.className='btn-check mt8'; ck.id='puzzle-check-btn'; ck.textContent='答えを確認する'; ck.disabled=true; ck.onclick=()=>checkBlank(p); area.appendChild(ck);
+  frag.appendChild(area); return frag;
+}
+function renderBlank(p,el) {
+  const parts=p.sentence.split('□□'); let html='';
+  parts.forEach((part,i)=>{ html+=esc(part); if(i<p.blanks.length){ const f=state.blankFilled[i]; html+=f?`<span class="blank-box filled" data-idx="${i}">${esc(f)}</span>`:`<span class="blank-box" data-idx="${i}">　</span>`; } });
+  el.innerHTML=html;
+  el.querySelectorAll('.blank-box.filled').forEach(box=>{ box.onclick=()=>{ const idx=parseInt(box.dataset.idx),val=state.blankFilled[idx]; state.blankFilled[idx]=null; const ci=p.choices.indexOf(val); if(ci>=0){state.blankChoiceUsed[ci]=false;document.getElementById(`choice-${ci}`)?.classList.remove('used');} renderBlank(p,el); updateBlankBtn(p); }; });
+}
+function fillBlank(value,ci,p){ const ei=state.blankFilled.indexOf(null); if(ei===-1)return; state.blankFilled[ei]=value; state.blankChoiceUsed[ci]=true; document.getElementById(`choice-${ci}`)?.classList.add('used'); renderBlank(p,document.getElementById('blank-sentence')); updateBlankBtn(p); }
+function updateBlankBtn(p){ const btn=document.getElementById('puzzle-check-btn'); if(btn) btn.disabled=state.blankFilled.includes(null); }
+function checkBlank(p){ if(p.blanks.every((b,i)=>state.blankFilled[i]===b.answer)){ puzzleSolved(p); } else { shakeEl('blank-sentence'); showToast('ちがうみたい。もう一度考えよう！'); state.blankFilled=new Array(p.blanks.length).fill(null); state.blankChoiceUsed=new Array(p.choices.length).fill(false); renderBlank(p,document.getElementById('blank-sentence')); document.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('used')); updateBlankBtn(p); } }
+
+// ============================================================
+//  FIND-ODD PUZZLE
+// ============================================================
+function makeFindOddPuzzle(p) {
+  const frag = document.createDocumentFragment();
+  pTitle(frag, p.label); pDesc(frag, p.instruction);
+  const indexed = p.items.map((item,i)=>({...item,origIdx:i})).sort(()=>Math.random()-0.5);
+  const grid = document.createElement('div'); grid.className='find-odd-grid';
+  let done=false;
+  indexed.forEach(item=>{ const card=document.createElement('div'); card.className='find-odd-card'; card.innerHTML=`<span class="fo-emoji">${item.emoji}</span><span class="fo-label">${esc(item.label)}</span>`;
+    card.onclick=()=>{ if(done)return; if(item.origIdx===p.oddIndex){ done=true; card.classList.add('correct'); setTimeout(()=>puzzleSolved(p),600); } else { card.classList.add('wrong-ans'); showToast(['それは正しい情報だよ！','それは仲間だよ！','ちがうぞ！'][Math.floor(Math.random()*3)]); setTimeout(()=>card.classList.remove('wrong-ans'),700); } };
+    grid.appendChild(card); });
+  frag.appendChild(grid); return frag;
+}
+
+// ============================================================
+//  RIDDLE PUZZLE
+// ============================================================
+function makeRiddlePuzzle(p) {
+  const frag = document.createDocumentFragment();
+  pTitle(frag, p.label); pDesc(frag, p.instruction);
+  const rb=document.createElement('div'); rb.className='riddle-text'; rb.textContent=p.riddle; frag.appendChild(rb);
+  const ca=document.createElement('div'); ca.className='riddle-choices';
+  const labels=['ア','イ','ウ','エ']; let done=false;
+  p.choices.forEach((ch,i)=>{ const btn=document.createElement('button'); btn.className='riddle-choice'; btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(ch)}</span>`;
+    btn.onclick=()=>{ if(done)return; if(i===p.correctIdx){ done=true; btn.classList.add('correct'); ca.querySelectorAll('.riddle-choice').forEach(b=>{b.disabled=true;}); setTimeout(()=>puzzleSolved(p),600); } else { btn.classList.add('wrong-ans'); showToast('ちがうよ！もう一度考えてみよう！'); setTimeout(()=>btn.classList.remove('wrong-ans'),700); } };
+    ca.appendChild(btn); });
+  frag.appendChild(ca); return frag;
+}
+
+// ============================================================
+//  CIPHER PUZZLE  （一部を「？」で隠して推理が必要）
+// ============================================================
+function makeCipherPuzzle(p) {
+  const frag = document.createDocumentFragment();
+  pTitle(frag, p.label); pDesc(frag, p.instruction);
+  const kt=document.createElement('div'); kt.className='cipher-key-table';
+  p.keyMap.forEach(({sym,kana,hidden})=>{ const cell=document.createElement('div'); cell.className='cipher-key-cell'; cell.innerHTML=`<span class="ck-sym">${sym}</span><span class="ck-eq">＝</span><span class="ck-kana${hidden?' hidden-kana':''}">${hidden?'？':kana}</span>`; kt.appendChild(cell); });
+  frag.appendChild(kt);
+  const msg=document.createElement('div'); msg.className='cipher-message'; msg.textContent=p.message; frag.appendChild(msg);
+  const hn=document.createElement('div'); hn.className='cipher-hint-note'; hn.textContent='↑ この暗号が表す言葉はどれ？（？は自分で推理！）'; frag.appendChild(hn);
+  const ca=document.createElement('div'); ca.className='riddle-choices';
+  const labels=['ア','イ','ウ','エ']; let done=false;
+  p.choices.forEach((ch,i)=>{ const btn=document.createElement('button'); btn.className='riddle-choice'; btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(ch)}</span>`;
+    btn.onclick=()=>{ if(done)return; if(i===p.correctIdx){ done=true; btn.classList.add('correct'); msg.style.cssText+='color:var(--green-ok);font-weight:bold;border-color:var(--green-ok)'; msg.innerHTML=`${p.message}<br><span style="font-size:16px;letter-spacing:1px">→ ${esc(p.displayDecoded)}</span>`; ca.querySelectorAll('.riddle-choice').forEach(b=>{b.disabled=true;}); setTimeout(()=>puzzleSolved(p),800); } else { btn.classList.add('wrong-ans'); showToast('解読ミス！もう一度見直して！'); setTimeout(()=>btn.classList.remove('wrong-ans'),700); } };
+    ca.appendChild(btn); });
+  frag.appendChild(ca); return frag;
+}
+
+// ============================================================
+//  SLIDE PUZZLE  （2×2 スライドパズル）
+// ============================================================
+function makeSlidePuzzle(p) {
+  const frag = document.createDocumentFragment();
+  pTitle(frag, p.label); pDesc(frag, p.instruction);
+  if(p.question) pDesc(frag, p.question);
+
+  // 目標表示
+  const tWrap = document.createElement('div'); tWrap.style.cssText='text-align:center;margin-bottom:4px';
+  const tLabel = document.createElement('div'); tLabel.style.cssText='font-size:11px;color:var(--brown-mid);font-weight:bold;margin-bottom:6px'; tLabel.textContent='🎯 目標'; tWrap.appendChild(tLabel);
+  const tRow = document.createElement('div'); tRow.style.cssText='display:flex;gap:6px;align-items:center;justify-content:center';
+  p.word.forEach(ch=>{ const t=document.createElement('div'); t.style.cssText='width:40px;height:40px;background:rgba(39,174,96,0.15);border:2px solid var(--green-ok);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;color:var(--green-ok)'; t.textContent=ch; tRow.appendChild(t); });
+  // empty slot indicator
+  const eSlot=document.createElement('div'); eSlot.style.cssText='width:40px;height:40px;border:2px dashed var(--green-ok);border-radius:10px;opacity:0.4'; tRow.appendChild(eSlot);
+  tWrap.appendChild(tRow); frag.appendChild(tWrap);
+
+  // 初期タイル生成（ランダムスクランブル）
+  state.slideCols = p.cols; state.slideRows = p.rows; state.slideMoves = 0;
+  const solved = [...p.word, null];
+  let tiles = [...solved];
+  for(let i=0;i<40;i++){
+    const ei=tiles.indexOf(null);
+    const adj=slideAdj(ei,p.cols,p.rows);
+    const r=adj[Math.floor(Math.random()*adj.length)];
+    [tiles[ei],tiles[r]]=[tiles[r],tiles[ei]];
+  }
+  // 万が一解けた状態になったら再スクランブル
+  if(tiles.every((v,i)=>v===solved[i])){ [tiles[0],tiles[1]]=[tiles[1],tiles[0]]; }
+  state.slideTiles = tiles;
+
+  const movesEl = document.createElement('div'); movesEl.className='slide-moves'; movesEl.id='slide-moves'; movesEl.textContent='タップでスライド ✨';
+
+  const gridEl = document.createElement('div');
+  gridEl.className=`slide-grid slide-grid-${p.cols}x${p.rows}`; gridEl.id='slide-grid';
+  gridEl.style.cssText=`display:grid;grid-template-columns:repeat(${p.cols},1fr);gap:6px;`;
+
+  frag.appendChild(movesEl);
+
+  const wrap = document.createElement('div'); wrap.style.cssText='display:flex;justify-content:center;margin:4px 0';
+  wrap.appendChild(gridEl); frag.appendChild(wrap);
+
+  setTimeout(()=>renderSlideGrid(p),10);
+  return frag;
+}
+
+function slideAdj(idx, cols, rows) {
+  const r=Math.floor(idx/cols), c=idx%cols, res=[];
+  if(r>0) res.push(idx-cols);
+  if(r<rows-1) res.push(idx+cols);
+  if(c>0) res.push(idx-1);
+  if(c<cols-1) res.push(idx+1);
+  return res;
+}
+
+function renderSlideGrid(p) {
+  const g=document.getElementById('slide-grid'); if(!g)return;
+  const solved=[...p.word,null];
+  g.innerHTML='';
+  state.slideTiles.forEach((ch,i)=>{
+    const tile=document.createElement('div');
+    if(ch===null){
+      tile.className='slide-tile empty';
+    } else {
+      const inPlace = ch===solved[i];
+      tile.className='slide-tile filled'+(inPlace?' in-place':'');
+      tile.textContent=ch;
+      const ei=state.slideTiles.indexOf(null);
+      const adj=slideAdj(ei,state.slideCols,state.slideRows);
+      if(adj.includes(i)){
+        tile.style.cursor='pointer';
+        tile.onclick=()=>doSlideMove(i,p);
+      } else {
+        tile.style.cursor='default';
+        tile.style.opacity='0.85';
+      }
+    }
+    g.appendChild(tile);
+  });
+  // 手数表示
+  const mv=document.getElementById('slide-moves');
+  if(mv && state.slideMoves>0) mv.textContent=`${state.slideMoves}手`;
+}
+
+function doSlideMove(tileIdx, p) {
+  const ei=state.slideTiles.indexOf(null);
+  const adj=slideAdj(ei,state.slideCols,state.slideRows);
+  if(!adj.includes(tileIdx)) return;
+  [state.slideTiles[ei],state.slideTiles[tileIdx]]=[state.slideTiles[tileIdx],state.slideTiles[ei]];
+  state.slideMoves++;
+  renderSlideGrid(p);
+  // 勝利チェック
+  const solved=[...p.word,null];
+  if(state.slideTiles.every((v,i)=>v===solved[i])){
+    document.querySelectorAll('.slide-tile.filled').forEach(t=>t.classList.add('win-flash'));
+    setTimeout(()=>puzzleSolved(p),800);
+  }
+}
+
+// ============================================================
+//  SPOT THE DIFF PUZZLE
+// ============================================================
+function makeSpotTheDiffPuzzle(p) {
+  const frag = document.createDocumentFragment();
+  pTitle(frag, p.label); pDesc(frag, p.instruction);
+  const ctx=document.createElement('div'); ctx.style.cssText='font-size:12px;color:var(--brown-mid);text-align:center;margin-bottom:8px;font-weight:bold'; ctx.textContent=p.context; frag.appendChild(ctx);
+  const sent=document.createElement('div'); sent.className='spotthediff-sentence';
+  let clickIdx=0; let done=false;
+  const msgEl=document.createElement('div'); msgEl.className='diff-not-wrong-msg';
+  p.segments.forEach(seg=>{
+    if(!seg.click){ const sp=document.createElement('span'); sp.textContent=seg.text; sent.appendChild(sp); }
+    else {
+      const span=document.createElement('span'); span.className='diff-clickable'; span.textContent=seg.text;
+      const isWrong=seg.wrong;
+      span.onclick=()=>{
+        if(done)return;
+        if(isWrong){ done=true; span.classList.add('correct-found'); msgEl.textContent=''; setTimeout(()=>puzzleSolved(p),600); }
+        else { span.classList.add('wrong-pick'); msgEl.textContent='それは正しい情報だよ！もう一度探して！'; setTimeout(()=>{span.classList.remove('wrong-pick'); msgEl.textContent='';},800); }
+      };
+      sent.appendChild(span); clickIdx++;
+    }
+  });
+  frag.appendChild(sent); frag.appendChild(msgEl); return frag;
+}
+
+// ============================================================
+//  PUZZLE → (QUIZ) → NEXT PUZZLE / STAGE CLEAR
+// ============================================================
+const PUZZLES_PER_STAGE = 4;
+function puzzleSolved(p) {
+  if(state.puzzleSolvedFlag) return;
+  state.puzzleSolvedFlag=true;
+  const content=document.getElementById('game-content');
+  const pbs=document.querySelectorAll('.puzzle-box');
+  const pb=pbs[pbs.length-1];
+  if(pb){pb.style.borderColor='var(--green-ok)';pb.style.background='rgba(168,216,168,0.2)';}
+  content.appendChild(makeBubble('akio',`解けた！！${p.explanation||'正解だ！！'}`));
+  if(p.quiz){
+    state.quizAnswered=false;
+    setTimeout(()=>{
+      const pe=document.createElement('div'); pe.className='text-center';
+      pe.innerHTML=`<span class="phase-label">⚡ 問題に答えよう！</span>`;
+      content.appendChild(pe);
+      content.appendChild(makePuzzleQuiz(p.quiz));
+      setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+      startTimer();
+    },800);
+  } else {
+    const gained=100; state.score+=gained; updateScore(); showScorePop(`+${gained}`);
+    advanceToNextPuzzle();
+  }
+}
+
+function makePuzzleQuiz(q){
+  const box=document.createElement('div'); box.className='quiz-box'; box.id='quiz-box';
+  const R=18,C=2*Math.PI*R;
+  box.innerHTML=`<div class="quiz-header"><div class="quiz-label">🎯 問題に答えよう！</div><div class="timer-ring"><svg class="timer-svg" viewBox="0 0 44 44"><circle class="timer-track" cx="22" cy="22" r="${R}"/><circle class="timer-progress" id="timer-progress" cx="22" cy="22" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="timer-text" id="timer-text">30</div></div></div><div class="quiz-question">${esc(q.question)}</div><div class="quiz-options" id="quiz-options"></div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="hint-btn" id="hint-btn-quiz" onclick="useHint()">🦉 ヒント</button></div><div class="hint-bubble" id="hint-bubble"></div>`;
+  const opts=box.querySelector('#quiz-options'),labels=['ア','イ','ウ','エ'];
+  q.options.forEach((opt,i)=>{ const btn=document.createElement('button'); btn.className='quiz-option'; btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(opt)}</span>`; btn.onclick=()=>answerPuzzleQuiz(i,q,btn); opts.appendChild(btn); });
+  if(state.hintUsed) box.querySelector('#hint-btn-quiz').disabled=true;
+  return box;
+}
+
+function answerPuzzleQuiz(idx,q,btn){
+  if(state.quizAnswered)return; state.quizAnswered=true; clearTimer();
+  document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true);
+  const content=document.getElementById('game-content');
+  if(idx===q.correct){
+    btn.classList.add('correct');
+    const gained=100+Math.ceil(state.timerLeft*10); state.score+=gained; updateScore(); showScorePop(`+${gained}`);
+    content.appendChild(makeBubble('pacho',`正解！${q.explanation}`));
+    setTimeout(()=>advanceToNextPuzzle(),1800);
+  } else {
+    btn.classList.add('wrong-ans');
+    document.querySelectorAll('.quiz-option')[q.correct].classList.add('correct');
+    loseLife();
+    content.appendChild(makeBubble('pacho',`惜しい！正解は「${q.options[q.correct]}」。${q.explanation}`));
+    if(state.lives<=0) setTimeout(showGameOver,1800); else setTimeout(()=>advanceToNextPuzzle(),2500);
+  }
+}
+
+function advanceToNextPuzzle(){
+  const s=STAGES[state.currentStage],content=document.getElementById('game-content');
+  state.currentPuzzleIndex++;
+  if(state.currentPuzzleIndex<PUZZLES_PER_STAGE){
+    state.puzzleSolvedFlag=false; state.quizAnswered=false;
+    const pe=document.createElement('div'); pe.className='text-center';
+    pe.innerHTML=`<span class="phase-label">📜 問題 ${state.currentPuzzleIndex+1}/4</span>`;
+    content.appendChild(pe);
+    content.appendChild(makePuzzle(s.puzzles[state.currentPuzzleIndex]));
+    setTimeout(()=>content.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'}),300);
+  } else {
+    if(!state.party.find(m=>m.name===s.member.name)) state.party.push(s.member);
+    updateParty();
+    content.appendChild(makeBubble('pacho',`${s.member.name}が仲間になった！「${s.member.msg}」`));
+    setTimeout(()=>showStageClear(),2000);
+  }
+}
+
+// ============================================================
+//  QUIZ
+// ============================================================
+function makeQuiz(s) {
+  const q=s.quiz, box=document.createElement('div'); box.className='quiz-box'; box.id='quiz-box';
+  const R=18,C=2*Math.PI*R;
+  box.innerHTML=`<div class="quiz-header"><div class="quiz-label">🎯 クイズタイム！</div><div class="timer-ring"><svg class="timer-svg" viewBox="0 0 44 44"><circle class="timer-track" cx="22" cy="22" r="${R}"/><circle class="timer-progress" id="timer-progress" cx="22" cy="22" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="timer-text" id="timer-text">30</div></div></div><div class="quiz-question">${esc(q.question)}</div><div class="quiz-options" id="quiz-options"></div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="hint-btn" id="hint-btn-quiz" onclick="useHint()">🦉 ヒント</button></div><div class="hint-bubble" id="hint-bubble"></div>`;
+  const opts=box.querySelector('#quiz-options'), labels=['ア','イ','ウ','エ'];
+  q.options.forEach((opt,i)=>{ const btn=document.createElement('button'); btn.className='quiz-option'; btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(opt)}</span>`; btn.onclick=()=>answerQuiz(i,q,btn); opts.appendChild(btn); });
+  if(state.hintUsed) box.querySelector('#hint-btn-quiz').disabled=true;
+  return box;
+}
+
+function startTimer(){
+  clearTimer(); state.timerLeft=30;
+  const R=18,C=2*Math.PI*R;
+  state.timerInterval=setInterval(()=>{
+    state.timerLeft--;
+    const prog=document.getElementById('timer-progress'), text=document.getElementById('timer-text');
+    if(prog){prog.style.strokeDashoffset=C*(1-state.timerLeft/30); if(state.timerLeft<=10){prog.style.stroke='var(--red-life)'; if(text)text.style.color='var(--red-life)';}}
+    if(text) text.textContent=state.timerLeft;
+    if(state.timerLeft<=0){clearTimer();timeUp();}
+  },1000);
+}
+function clearTimer(){ if(state.timerInterval){clearInterval(state.timerInterval);state.timerInterval=null;} }
+
+function timeUp(){
+  if(state.quizAnswered)return; state.quizAnswered=true;
+  disableQuizOpts(); loseLife();
+  const s=STAGES[state.currentStage];
+  document.getElementById('game-content').appendChild(makeBubble('pacho',`時間切れ！正解は「${s.quiz.options[s.quiz.correct]}」だったぞ。次は気をつけろ。`));
+  if(state.lives<=0) setTimeout(showGameOver,1500); else setTimeout(moveNext,2000);
+}
+
+function answerQuiz(idx,q,btn){
+  if(state.quizAnswered)return; state.quizAnswered=true; clearTimer();
+  document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true);
+  if(idx===q.correct){
+    btn.classList.add('correct');
+    const gained=100+Math.ceil(state.timerLeft*10); state.score+=gained; updateScore(); showScorePop(`+${gained}`);
+    const s=STAGES[state.currentStage];
+    if(!state.party.find(m=>m.name===s.member.name)) state.party.push(s.member);
+    updateParty(); setTimeout(()=>showFeedback(gained,s.member,q.explanation),800);
+  } else {
+    btn.classList.add('wrong-ans');
+    document.querySelectorAll('.quiz-option')[q.correct].classList.add('correct');
+    loseLife();
+    document.getElementById('game-content').appendChild(makeBubble('pacho',`惜しい！正解は「${q.options[q.correct]}」。${q.explanation}`));
+    if(state.lives<=0) setTimeout(showGameOver,1800); else setTimeout(moveNext,2500);
+  }
+}
+function disableQuizOpts(){ document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true); document.querySelectorAll('.quiz-option')[STAGES[state.currentStage].quiz.correct]?.classList.add('correct'); }
+function moveNext(){ if(state.currentStage>=STAGES.length-1) showResult(); else showStageClear(); }
+
+function showFeedback(gained,member,explanation){
+  document.getElementById('fb-emoji').textContent='🎉';
+  document.getElementById('fb-title').textContent='正解！！';
+  document.getElementById('fb-sub').textContent=explanation||'';
+  document.getElementById('fb-member').textContent=member.emoji;
+  document.getElementById('fb-member-name').textContent=`${member.name}が仲間になった！\n「${member.msg}」`;
+  document.getElementById('fb-score').textContent=`+${gained} pts`;
+  document.getElementById('feedback-overlay').classList.add('visible');
+}
+function closeFeedback(){ document.getElementById('feedback-overlay').classList.remove('visible'); if(state.currentStage>=STAGES.length-1) showResult(); else showStageClear(); }
+
+function showStageClear(){
+  const s=STAGES[state.currentStage];
+  document.getElementById('clear-emoji').textContent=s.emoji;
+  document.getElementById('clear-title').textContent=`${s.era}ステージ クリア！`;
+  document.getElementById('clear-score').textContent=`スコア：${state.score}`;
+  document.getElementById('clear-party').innerHTML=state.party.map(m=>`<span title="${m.name}">${m.emoji}</span>`).join('');
+  const bl=document.getElementById('clear-bubbles'); bl.innerHTML='';
+  const btn=document.getElementById('btn-clear-next');
+  btn.style.visibility='hidden';
+  if(state.currentStage>=STAGES.length-1){btn.textContent='結果を見る 🏆';btn.onclick=showResult;}
+  else{btn.textContent='次のステージへ →';btn.onclick=nextStage;}
+  showScreen('screen-clear');
+  showDialogSequence(s.clearDialogs, bl, ()=>{btn.style.visibility='';},
+    document.getElementById('screen-clear'));
+}
+function nextStage(){ state.currentStage++; if(state.currentStage>=STAGES.length){showResult();return;} showScreen('screen-game'); loadStage(state.currentStage); }
+function showGameOver(){ document.getElementById('go-score').textContent=`スコア：${state.score}`; showScreen('screen-gameover'); }
+function showResult(){ document.getElementById('result-score').textContent=`最終スコア：${state.score}`; document.getElementById('result-party').innerHTML=state.party.map(m=>`<span title="${m.name}">${m.emoji}</span>`).join(''); showScreen('screen-result'); }
+
+function useHint(){
+  if(state.hintUsed)return; state.hintUsed=true; state.score=Math.floor(state.score/2); updateScore();
+  const hint=STAGES[state.currentStage].hint;
+  document.querySelectorAll('.hint-btn').forEach(b=>b.disabled=true);
+  const hb=document.getElementById('hint-bubble'); if(hb){hb.textContent=`🦉 フクロウ博士：${hint}（ヒント使用でスコア半減！）`;hb.classList.add('visible');}
+  const d=document.createElement('div'); d.className='hint-bubble visible mt8'; d.textContent=`🦉 フクロウ博士：${hint}（ヒント使用でスコア半減！）`;
+  document.getElementById('game-content').appendChild(d); d.scrollIntoView({behavior:'smooth'});
+}
+
+function loseLife(){ state.lives=Math.max(0,state.lives-1); updateLives(); const el=document.getElementById('lives-display'); el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),500); }
+function updateLives(){ document.getElementById('lives-display').textContent='❤️'.repeat(state.lives)+'🖤'.repeat(3-state.lives); }
+function updateScore(){ document.getElementById('score-display').textContent=state.score; }
+function updateParty(){ const c=document.getElementById('party-members'); c.innerHTML=''; state.party.forEach(m=>{const s=document.createElement('span');s.className='party-member';s.textContent=m.emoji;s.title=`${m.name}：${m.msg}`;c.appendChild(s);}); }
+
+function esc(str){ const d=document.createElement('div'); d.appendChild(document.createTextNode(str)); return d.innerHTML; }
+function shakeEl(id){ const el=document.getElementById(id); if(!el)return; el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),500); }
+function showToast(msg){ const t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:white;font-size:13px;padding:8px 18px;border-radius:20px;z-index:300;animation:scoreFly 2s ease forwards;white-space:nowrap'; document.body.appendChild(t); setTimeout(()=>t.remove(),2000); }
+function showScorePop(text){ const p=document.createElement('div'); p.className='score-pop'; p.textContent=text; p.style.cssText='left:50%;top:40%;transform:translateX(-50%)'; document.body.appendChild(p); setTimeout(()=>p.remove(),1200); }
+</script>
+</body>
+</html>

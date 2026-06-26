@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background -->
+  <circle cx="100" cy="100" r="100" fill="#C87830"/>
+
+  <!-- Body / brown vest -->
+  <ellipse cx="100" cy="185" rx="68" ry="42" fill="#4A2C0A"/>
+  <!-- White shirt collar -->
+  <path d="M87 146 L100 168 L113 146 L109 136 L91 136Z" fill="#F5F0E8"/>
+  <!-- Tie knot -->
+  <polygon points="94,148 106,148 102,156 98,156" fill="#8B3A1A"/>
+  <!-- Tie body -->
+  <path d="M98 156 L95 186 L100 192 L105 186 L102 156Z" fill="#8B3A1A"/>
+  <!-- Neck -->
+  <rect x="88" y="126" width="24" height="22" rx="6" fill="#EDB880"/>
+
+  <!-- Head -->
+  <ellipse cx="100" cy="86" rx="52" ry="55" fill="#EDB880"/>
+
+  <!-- Gray side hair -->
+  <ellipse cx="53" cy="88" rx="14" ry="22" fill="#C8C8C8"/>
+  <ellipse cx="147" cy="88" rx="14" ry="22" fill="#C8C8C8"/>
+
+  <!-- Ears -->
+  <ellipse cx="50" cy="94" rx="10" ry="14" fill="#EDB880"/>
+  <ellipse cx="150" cy="94" rx="10" ry="14" fill="#EDB880"/>
+  <ellipse cx="50" cy="94" rx="6" ry="9" fill="#D4906A"/>
+  <ellipse cx="150" cy="94" rx="6" ry="9" fill="#D4906A"/>
+
+  <!-- Forehead wrinkles -->
+  <path d="M76 62 Q100 56 124 62" stroke="#D4905A" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+  <path d="M80 70 Q100 65 120 70" stroke="#D4905A" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>
+
+  <!-- Eyebrows (gray/white) -->
+  <path d="M58 76 Q76 70 96 76" stroke="#BBBBBB" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M104 76 Q124 70 142 76" stroke="#BBBBBB" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Glasses frames -->
+  <rect x="58" y="80" width="38" height="26" rx="10" fill="white" stroke="#252525" stroke-width="4"/>
+  <rect x="104" y="80" width="38" height="26" rx="10" fill="white" stroke="#252525" stroke-width="4"/>
+  <!-- Bridge -->
+  <line x1="96" y1="93" x2="104" y2="93" stroke="#252525" stroke-width="4"/>
+  <!-- Arms -->
+  <line x1="48" y1="93" x2="58" y2="93" stroke="#252525" stroke-width="3.5"/>
+  <line x1="142" y1="93" x2="152" y2="93" stroke="#252525" stroke-width="3.5"/>
+
+  <!-- Eyes -->
+  <circle cx="77" cy="93" r="8" fill="#6B4226"/>
+  <circle cx="123" cy="93" r="8" fill="#6B4226"/>
+  <circle cx="79" cy="91" r="2.5" fill="white"/>
+  <circle cx="125" cy="91" r="2.5" fill="white"/>
+
+  <!-- Nose -->
+  <ellipse cx="100" cy="112" rx="7" ry="5" fill="#D4905A"/>
+
+  <!-- White mustache (upper) -->
+  <path d="M70 122 Q85 115 100 119 Q115 115 130 122" stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <!-- White mustache (lower curl) -->
+  <path d="M70 127 Q85 136 100 128 Q115 136 130 127" stroke="white" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Chin beard hint -->
+  <ellipse cx="100" cy="140" rx="14" ry="6" fill="white" opacity="0.85"/>
+</svg>
