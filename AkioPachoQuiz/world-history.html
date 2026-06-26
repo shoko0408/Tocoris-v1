@@ -755,9 +755,11 @@ function puzzleSolved(p){
 function makePuzzleQuiz(q){
   const box=document.createElement('div'); box.className='quiz-box'; box.id='quiz-box';
   const R=18,C=2*Math.PI*R;
-  box.innerHTML=`<div class="quiz-header"><div class="quiz-label">🎯 問題に答えよう！</div><div class="timer-ring"><svg class="timer-svg" viewBox="0 0 44 44"><circle class="timer-track" cx="22" cy="22" r="${R}"/><circle class="timer-progress" id="timer-progress" cx="22" cy="22" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="timer-text" id="timer-text">30</div></div></div><div class="quiz-question">${esc(q.question)}</div><div class="quiz-options" id="quiz-options"></div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="hint-btn" id="hint-btn-quiz" onclick="useHint()">🦉 ヒント</button></div><div class="hint-bubble" id="hint-bubble"></div>`;
+  const idx=[0,1,2,3];for(let i=3;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+  const sq={question:q.question,options:idx.map(k=>q.options[k]),correct:idx.indexOf(q.correct),explanation:q.explanation};
+  box.innerHTML=`<div class="quiz-header"><div class="quiz-label">🎯 問題に答えよう！</div><div class="timer-ring"><svg class="timer-svg" viewBox="0 0 44 44"><circle class="timer-track" cx="22" cy="22" r="${R}"/><circle class="timer-progress" id="timer-progress" cx="22" cy="22" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="timer-text" id="timer-text">30</div></div></div><div class="quiz-question">${esc(sq.question)}</div><div class="quiz-options" id="quiz-options"></div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="hint-btn" id="hint-btn-quiz" onclick="useHint()">🦉 ヒント</button></div><div class="hint-bubble" id="hint-bubble"></div>`;
   const opts=box.querySelector('#quiz-options'),labels=['ア','イ','ウ','エ'];
-  q.options.forEach((opt,i)=>{const btn=document.createElement('button');btn.className='quiz-option';btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(opt)}</span>`;btn.onclick=()=>answerPuzzleQuiz(i,q,btn);opts.appendChild(btn);});
+  sq.options.forEach((opt,i)=>{const btn=document.createElement('button');btn.className='quiz-option';btn.innerHTML=`<span class="opt-label">${labels[i]}</span><span>${esc(opt)}</span>`;btn.onclick=()=>answerPuzzleQuiz(i,sq,btn);opts.appendChild(btn);});
   if(state.hintUsed)box.querySelector('#hint-btn-quiz').disabled=true;
   return box;
 }
