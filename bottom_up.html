@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#12141f">
+<title>Bottom Up</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="rotate-notice">
+    <p>📱 端末を縦向きにしてください</p>
+  </div>
+
+  <div id="app">
+
+    <section id="screen-title" class="screen on">
+      <div class="title-icons">
+        <button id="btn-open-achievements" class="btn-icon" aria-label="実績">🏆</button>
+        <button id="btn-open-settings" class="btn-icon" aria-label="設定">⚙</button>
+      </div>
+      <h1 class="logo">BOTTOM&nbsp;UP</h1>
+      <p class="tagline">下から積み上げる、新感覚パズル</p>
+      <div class="mode-buttons">
+        <button id="btn-start-stage" class="btn btn-primary">ステージモード</button>
+        <button id="btn-start-endless" class="btn btn-secondary">エンドレスモード</button>
+      </div>
+    </section>
+
+    <section id="screen-settings" class="screen">
+      <header class="game-header">
+        <button id="btn-settings-back" class="btn-icon" aria-label="戻る">←</button>
+        <span class="settings-title">設定</span>
+      </header>
+
+      <div class="settings-list">
+        <div class="settings-row">
+          <span class="settings-label">効果音</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-sfx" aria-label="効果音">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">BGM</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-bgm" aria-label="BGM">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-achievements" class="screen">
+      <header class="game-header">
+        <button id="btn-achievements-back" class="btn-icon" aria-label="戻る">←</button>
+        <span class="settings-title">実績</span>
+      </header>
+
+      <div class="stats-summary">
+        <div class="stats-summary-item">
+          <span class="stats-summary-value" id="stat-total-plays">0</span>
+          <span class="stats-summary-label">総プレイ回数</span>
+        </div>
+        <div class="stats-summary-item">
+          <span class="stats-summary-value" id="stat-total-lines">0</span>
+          <span class="stats-summary-label">総ライン数</span>
+        </div>
+      </div>
+
+      <div id="achievement-list" class="achievement-list"></div>
+    </section>
+
+    <section id="screen-game" class="screen">
+      <header class="game-header">
+        <button id="btn-back" class="btn-icon" aria-label="戻る">←</button>
+        <div class="stage-info">
+          <span id="stage-label" class="stage-label">STAGE</span>
+          <span id="stage-number" class="stage-number">1</span>
+        </div>
+        <span id="stage-progress" class="stage-progress">LINE 0/3</span>
+      </header>
+
+      <div class="stat-bar">
+        <div class="stat">
+          <span class="stat-label">SCORE</span>
+          <span id="score" class="stat-value">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">HIGH</span>
+          <span id="high-score" class="stat-value">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">COMBO</span>
+          <span id="combo" class="stat-value">0</span>
+        </div>
+      </div>
+
+      <div id="board-wrap" class="board-wrap">
+        <div id="preview-row" class="preview-row"></div>
+        <div id="board" class="board"></div>
+        <div class="timer-bar">
+          <div id="timer-fill" class="timer-fill"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-left" class="btn-control" aria-label="左へ">◀</button>
+        <button id="btn-decide" class="btn-control btn-decide">決定</button>
+        <button id="btn-right" class="btn-control" aria-label="右へ">▶</button>
+      </div>
+    </section>
+
+    <div id="overlay-gameover" class="overlay">
+      <div class="overlay-card">
+        <h2>GAME OVER</h2>
+        <p id="new-record-badge" class="new-record-badge">🎉 NEW RECORD!</p>
+        <div class="overlay-stats">
+          <div class="overlay-stat">
+            <span class="overlay-stat-label">SCORE</span>
+            <strong id="final-score" class="overlay-stat-value">0</strong>
+          </div>
+          <div class="overlay-stat">
+            <span class="overlay-stat-label">HIGH SCORE</span>
+            <strong id="final-high-score" class="overlay-stat-value">0</strong>
+          </div>
+          <div class="overlay-stat">
+            <span class="overlay-stat-label">MAX COMBO</span>
+            <strong id="final-combo" class="overlay-stat-value">0</strong>
+          </div>
+          <div class="overlay-stat">
+            <span id="final-stage-label" class="overlay-stat-label">REACHED STAGE</span>
+            <strong id="final-stage" class="overlay-stat-value">1</strong>
+          </div>
+          <div class="overlay-stat">
+            <span class="overlay-stat-label">LINES CLEARED</span>
+            <strong id="final-lines" class="overlay-stat-value">0</strong>
+          </div>
+        </div>
+
+        <div id="result-achievements" class="result-achievements">
+          <p class="result-achievements-title">🏆 今回解除した実績</p>
+          <div id="result-achievements-list" class="result-achievements-list"></div>
+        </div>
+
+        <button id="btn-retry" class="btn btn-primary">もう一度</button>
+        <button id="btn-result-title" class="btn btn-ghost">タイトルへ</button>
+      </div>
+    </div>
+
+    <div id="overlay-stageclear" class="overlay">
+      <div class="overlay-card">
+        <h2 id="stageclear-title">STAGE CLEAR!</h2>
+        <p id="stageclear-sub" class="stageclear-sub">STAGE 1 CLEAR</p>
+        <button id="btn-next-stage" class="btn btn-primary">次のステージへ</button>
+      </div>
+    </div>
+
+    <div id="achievement-toast" class="achievement-toast">
+      <span class="achievement-toast-icon" id="achievement-toast-icon">🏆</span>
+      <div class="achievement-toast-text">
+        <span class="achievement-toast-title">実績解除</span>
+        <span class="achievement-toast-name" id="achievement-toast-name"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
