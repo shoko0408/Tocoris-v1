@@ -4,6 +4,8 @@ import {
   pieceAt,
   slideBounds,
   slideBlock,
+  settleAfterSlide,
+  resolveSlideClear,
   spawnPendingBlocks,
   resolveClears,
   advanceStage,
@@ -176,13 +178,18 @@ function init() {
     startTurnTimer();
   }
 
-  // ブロックを1つスライドさせる(=1ターン経過)たびに呼ばれる。
-  // 予告されていたブロック群を最下段へ組み込み、盤面全体を押し上げる。
+  // ブロックを1つスライドさせる(=1ターン経過)たびに呼ばれる、入力の窓口。
+  // 実際の処理は performSpawnStep で行う(スライド後の合体消去に続けて
+  // 呼び出す場合は、二重処理防止ガードを経由せずそちらを直接呼ぶ)。
   function advanceTurn() {
     if (isResolving) return;
     setInteractionEnabled(false);
     clearTurnTimer();
+    performSpawnStep();
+  }
 
+  // 予告されていたブロック群を最下段へ組み込み、合体・押し上げを行う。
+  function performSpawnStep() {
     const {
       fullRows, bonusCells, gameOver, newCols,
     } = spawnPendingBlocks(state);
@@ -290,11 +297,52 @@ function init() {
     render();
     if (moved) {
       audio.playMove();
-      advanceTurn();
+      setInteractionEnabled(false);
+      clearTurnTimer();
+      handleSlideSettle();
     }
   }
   boardEl.addEventListener('pointerup', endDrag);
   boardEl.addEventListener('pointercancel', endDrag);
+
+  // スライドで既存ブロック同士が合体し、揃った行があれば先に消してから、
+  // 通常通り次のブロックをスポーンさせるターン進行へ続ける。
+  function handleSlideSettle() {
+    const { fullRows, bonusCells } = settleAfterSlide(state);
+    render();
+
+    if (fullRows.length === 0) {
+      performSpawnStep();
+      return;
+    }
+
+    audio.playLineClear(fullRows.length);
+    renderer.flashLines(fullRows);
+    if (bonusCells.length > 0) {
+      audio.playRainbow();
+      renderer.flashBonusCells(bonusCells);
+      renderer.rainbowBurst();
+    }
+    resolveTimeoutId = setTimeout(() => {
+      resolveTimeoutId = null;
+      const clearedStage = state.stage;
+      const result = resolveSlideClear(state, fullRows, bonusCells);
+      recordLinesCleared(tracker, fullRows.length);
+      recordBestCombo(tracker, state.maxCombo);
+      if (bonusCells.length > 0) recordRainbowTriggered(tracker);
+      render();
+      renderer.shakeBoard();
+
+      if (result.stageCleared) {
+        recordStageCleared(tracker, clearedStage);
+        audio.playStageClear();
+        renderer.showStageClear({ stage: clearedStage, isFinal: clearedStage >= TOTAL_STAGES });
+        checkAchievements();
+        return;
+      }
+      performSpawnStep();
+    }, LINE_FLASH_MS);
+  }
 
   function renderAchievementsScreen() {
     document.getElementById('stat-total-plays').textContent = tracker.stats.totalPlays;

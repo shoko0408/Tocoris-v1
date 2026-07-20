@@ -19,28 +19,34 @@ export function insertRowAtBottom(board, rowCells) {
   board[0] = rowCells.map((cell) => (cell ? { ...cell } : null));
 }
 
-// 最下段から順に、列が重ならない行同士をまとめて1つの行に合体させる。
-// (新しく入ったブロックの列と、既存の一番下の行の列が重ならなければ、
-//  そのまま同じ行に詰め合わせる。重なる場合はそこで止まり、そのブロックは
-//  形を保ったまま浮いた状態になる = 分断されない)
-export function compactFromBottom(board) {
-  let row = 0;
-  while (row < ROWS - 1) {
-    const current = board[row];
-    const above = board[row + 1];
-    const aboveHasContent = above.some((cell) => cell !== null);
-    if (!aboveHasContent) break;
+// 盤面全体を見て、列が重ならない隣り合う行同士を1つの行に合体させる。
+// (ある行と、その1つ上の行の中身が列的に重ならなければ、同じ行に詰め合わせて
+//  上を1段ずつ繰り上げる。重なる場合はそのブロックが形を保ったまま浮いた状態になる
+//  = 分断されない)。変化がなくなるまで盤面全体を繰り返しスキャンすることで、
+// 新しいブロックの挿入時だけでなく、スライド操作などで後から合体条件が
+// 揃ったブロック同士もまとめて詰められる。
+export function compactBoard(board) {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let row = 0; row < ROWS - 1; row++) {
+      const current = board[row];
+      const above = board[row + 1];
+      const aboveHasContent = above.some((cell) => cell !== null);
+      if (!aboveHasContent) continue;
 
-    const overlaps = current.some((cell, c) => cell !== null && above[c] !== null);
-    if (overlaps) break;
+      const overlaps = current.some((cell, c) => cell !== null && above[c] !== null);
+      if (overlaps) continue;
 
-    for (let c = 0; c < COLS; c++) {
-      if (above[c] !== null) current[c] = above[c];
+      for (let c = 0; c < COLS; c++) {
+        if (above[c] !== null) current[c] = above[c];
+      }
+      for (let r = row + 1; r < ROWS - 1; r++) {
+        board[r] = board[r + 1];
+      }
+      board[ROWS - 1] = Array(COLS).fill(null);
+      changed = true;
     }
-    for (let r = row + 1; r < ROWS - 1; r++) {
-      board[r] = board[r + 1];
-    }
-    board[ROWS - 1] = Array(COLS).fill(null);
   }
 }
 

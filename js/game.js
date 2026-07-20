@@ -3,7 +3,7 @@ import {
   createBoard,
   isTopRowFilled,
   insertRowAtBottom,
-  compactFromBottom,
+  compactBoard,
   findFullRows,
   buildClearMap,
   clearCells,
@@ -132,6 +132,15 @@ export function slideBlock(state, piece, newStartCol) {
   return true;
 }
 
+// スライドによって既存ブロック同士が下の行の空きにぴったり収まるようになったら、
+// そのまま同じ行へ合体させる。揃った行があればその情報を返す(消去はまだしない)。
+export function settleAfterSlide(state) {
+  compactBoard(state.board);
+  const fullRows = findFullRows(state.board);
+  const bonusCells = collectBonusCells(state.board, fullRows);
+  return { fullRows, bonusCells };
+}
+
 // ターンの前半: 予告されていたブロック群を最下段へ挿入する。
 // 最下段の列が既存ブロックと重ならなければそのまま同じ行に詰め合い、
 // 重なる場合だけ、ぶつかったブロックを(形を保ったまま)押し上げる。
@@ -150,7 +159,7 @@ export function spawnPendingBlocks(state) {
     if (cell) newCols.push(c);
   });
   insertRowAtBottom(state.board, row);
-  compactFromBottom(state.board);
+  compactBoard(state.board);
 
   state.score += PLACEMENT_SCORE;
   updateHighScore(state);
@@ -162,9 +171,8 @@ export function spawnPendingBlocks(state) {
   };
 }
 
-// ターンの後半: 揃った行(+特殊ブロックのボーナスマス)を消去し、
-// ステージクリア判定を行い、次に予告するブロック群を準備する(ステージモードのみ)。
-export function resolveClears(state, fullRows, bonusCells = []) {
+// 揃った行(+特殊ブロックのボーナスマス)を実際に消去し、スコア・コンボを加算する。
+function applyLineClear(state, fullRows, bonusCells) {
   if (fullRows.length > 0) {
     const baseScore = SCORE_TABLE[fullRows.length] || fullRows.length * 100;
     const comboMultiplier = Math.min(COMBO_MULTIPLIER_MAX, 1 + state.combo * COMBO_MULTIPLIER_STEP);
@@ -179,6 +187,25 @@ export function resolveClears(state, fullRows, bonusCells = []) {
     state.combo = 0;
   }
   updateHighScore(state);
+}
+
+// スライドによる合体で揃った行を消去する(次のブロック群の準備はまだしない)。
+// ステージクリア判定はここで行い、クリアしていればそれ以上ターンを進めない。
+export function resolveSlideClear(state, fullRows, bonusCells = []) {
+  applyLineClear(state, fullRows, bonusCells);
+
+  const config = getCurrentStageConfig(state);
+  if (state.mode === 'stage' && state.linesInStage >= config.requiredLines) {
+    state.stageCleared = true;
+    return { stageCleared: true };
+  }
+  return { stageCleared: false };
+}
+
+// ターンの後半: 揃った行(+特殊ブロックのボーナスマス)を消去し、
+// ステージクリア判定を行い、次に予告するブロック群を準備する(ステージモードのみ)。
+export function resolveClears(state, fullRows, bonusCells = []) {
+  applyLineClear(state, fullRows, bonusCells);
 
   const config = getCurrentStageConfig(state);
 
