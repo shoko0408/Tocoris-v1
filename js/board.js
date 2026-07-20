@@ -19,6 +19,31 @@ export function insertRowAtBottom(board, rowCells) {
   board[0] = rowCells.map((cell) => (cell ? { ...cell } : null));
 }
 
+// 最下段から順に、列が重ならない行同士をまとめて1つの行に合体させる。
+// (新しく入ったブロックの列と、既存の一番下の行の列が重ならなければ、
+//  そのまま同じ行に詰め合わせる。重なる場合はそこで止まり、そのブロックは
+//  形を保ったまま浮いた状態になる = 分断されない)
+export function compactFromBottom(board) {
+  let row = 0;
+  while (row < ROWS - 1) {
+    const current = board[row];
+    const above = board[row + 1];
+    const aboveHasContent = above.some((cell) => cell !== null);
+    if (!aboveHasContent) break;
+
+    const overlaps = current.some((cell, c) => cell !== null && above[c] !== null);
+    if (overlaps) break;
+
+    for (let c = 0; c < COLS; c++) {
+      if (above[c] !== null) current[c] = above[c];
+    }
+    for (let r = row + 1; r < ROWS - 1; r++) {
+      board[r] = board[r + 1];
+    }
+    board[ROWS - 1] = Array(COLS).fill(null);
+  }
+}
+
 export function findFullRows(board) {
   const full = [];
   for (let r = 0; r < ROWS; r++) {

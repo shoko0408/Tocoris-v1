@@ -3,6 +3,7 @@ import {
   createBoard,
   isTopRowFilled,
   insertRowAtBottom,
+  compactFromBottom,
   findFullRows,
   buildClearMap,
   clearCells,
@@ -131,7 +132,9 @@ export function slideBlock(state, piece, newStartCol) {
   return true;
 }
 
-// ターンの前半: 予告されていたブロック群を最下段へ挿入し、盤面全体を1段押し上げる。
+// ターンの前半: 予告されていたブロック群を最下段へ挿入する。
+// 最下段の列が既存ブロックと重ならなければそのまま同じ行に詰め合い、
+// 重なる場合だけ、ぶつかったブロックを(形を保ったまま)押し上げる。
 // ライン消去は resolveClears に分離し、間に消去エフェクトを挟めるようにする。
 export function spawnPendingBlocks(state) {
   if (state.isGameOver) return { fullRows: [], bonusCells: [], gameOver: true, newCols: [] };
@@ -147,6 +150,7 @@ export function spawnPendingBlocks(state) {
     if (cell) newCols.push(c);
   });
   insertRowAtBottom(state.board, row);
+  compactFromBottom(state.board);
 
   state.score += PLACEMENT_SCORE;
   updateHighScore(state);
