@@ -8,6 +8,20 @@ function cellClassFor(data) {
   return `cell filled ${visual}`;
 }
 
+// 同じ色の別ブロックが隙間なく隣り合っても切れ目が分かるよう、
+// 左隣が別ブロック(pieceIdが違う)なら境界線用のクラスを付ける
+function classNameForRow(rowData, c) {
+  const cellData = rowData[c];
+  let className = cellClassFor(cellData);
+  if (cellData) {
+    const leftData = c > 0 ? rowData[c - 1] : null;
+    if (leftData && leftData.pieceId !== cellData.pieceId) {
+      className += ' piece-edge';
+    }
+  }
+  return className;
+}
+
 function buildPreviewCells(container) {
   container.innerHTML = '';
   const cells = [];
@@ -100,8 +114,9 @@ export function createRenderer({
   function renderBoard(board) {
     for (let boardRow = 0; boardRow < ROWS; boardRow++) {
       const domIndex = domIndexOf(boardRow);
+      const rowData = board[boardRow];
       for (let c = 0; c < COLS; c++) {
-        boardColumns[c].cells[domIndex].className = cellClassFor(board[boardRow][c]);
+        boardColumns[c].cells[domIndex].className = classNameForRow(rowData, c);
       }
     }
   }
@@ -115,7 +130,7 @@ export function createRenderer({
       }
     });
     for (let c = 0; c < COLS; c++) {
-      previewCells[c].className = cellClassFor(segmentByCol[c]);
+      previewCells[c].className = classNameForRow(segmentByCol, c);
     }
   }
 

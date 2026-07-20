@@ -521,6 +521,13 @@ body {
     inset 0 -3px 5px rgba(0, 0, 0, .3),
     0 2px 4px rgba(0, 0, 0, .25);
 }
+.board .cell.filled {
+  cursor: grab;
+}
+/* 同じ色の別ブロックが隙間なく隣り合っても切れ目が分かるように境界線を入れる */
+.cell.filled.piece-edge {
+  border-left: 2px solid rgba(0, 0, 0, .6);
+}
 .cell.filled.c-red    { background: linear-gradient(155deg, var(--c-red-t),    var(--c-red-b) 55%,    var(--c-red-s)); }
 .cell.filled.c-blue   { background: linear-gradient(155deg, var(--c-blue-t),   var(--c-blue-b) 55%,   var(--c-blue-s)); }
 .cell.filled.c-green  { background: linear-gradient(155deg, var(--c-green-t),  var(--c-green-b) 55%,  var(--c-green-s)); }
@@ -623,45 +630,19 @@ body {
   background: linear-gradient(90deg, var(--c-orange-b), var(--c-red-b));
 }
 
-/* ── 操作コントロール ── */
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 12px 20px 20px;
+/* ── 操作ヒント ── */
+.hint-text {
+  padding: 4px 20px 16px;
   flex-shrink: 0;
+  text-align: center;
+  font-size: .78rem;
+  color: var(--text-dim);
 }
-.btn-control {
-  font-family: inherit;
-  font-size: 1.2rem;
-  font-weight: 700;
-  border: none;
-  border-radius: 14px;
-  padding: 16px 0;
-  width: 64px;
-  background: linear-gradient(155deg, #262b45, var(--panel));
-  color: var(--text);
-  cursor: pointer;
-  border: 1px solid var(--panel-border);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .06);
-  transition: transform .12s ease;
-}
-.btn-control:active {
-  transform: scale(.92);
-}
-.btn-decide {
-  flex: 1;
-  max-width: 200px;
-  background: linear-gradient(155deg, var(--accent-2), var(--accent));
-  color: #fff;
-  letter-spacing: 2px;
-  box-shadow: 0 6px 16px rgba(108, 92, 231, .4), inset 0 1px 0 rgba(255, 255, 255, .25);
-}
-.btn-control:disabled {
-  opacity: .4;
-  box-shadow: none;
-  cursor: default;
+
+/* 決定〜ライン消去演出中は盤面の操作を受け付けない */
+.board.board-busy {
+  pointer-events: none;
+  opacity: .85;
 }
 
 /* ── ゲームオーバー ── */

@@ -181,6 +181,8 @@ function applyLineClear(state, fullRows, bonusCells) {
     state.combo += 1;
     state.maxCombo = Math.max(state.maxCombo, state.combo);
     clearCells(state.board, buildClearMap(fullRows, bonusCells));
+    // 消去後、行同士の重なりが解消されて新たに合体できることがあるため再度詰める
+    compactBoard(state.board);
     state.linesInStage += fullRows.length;
     state.linesThisRun += fullRows.length;
   } else {
