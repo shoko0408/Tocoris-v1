@@ -11,6 +11,7 @@ import {
   advanceStage,
   resetGame,
   getCurrentStageConfig,
+  hasNoMovableBlocks,
 } from './game.js';
 import { TOTAL_STAGES } from './stages.js';
 import { createRenderer } from './render.js';
@@ -122,6 +123,16 @@ function init() {
     }, TIMER_TICK_MS);
   }
 
+  // 盤面上に動かせるブロックが1つも無い(既存ブロックが0)ときは、
+  // タイマーを待たずにそのまま次のブロックを出す。
+  function startTurnOrAutoAdvance() {
+    if (hasNoMovableBlocks(state)) {
+      advanceTurn();
+      return;
+    }
+    startTurnTimer();
+  }
+
   function checkAchievements() {
     const newlyUnlocked = checkNewAchievements(tracker, state.highScore);
     newlyUnlocked.forEach((a) => {
@@ -162,7 +173,7 @@ function init() {
     render();
     showScreen('screen-game');
     setInteractionEnabled(true);
-    startTurnTimer();
+    startTurnOrAutoAdvance();
     checkAchievements();
   }
 
@@ -175,7 +186,7 @@ function init() {
     renderer.hideStageClear();
     render();
     setInteractionEnabled(true);
-    startTurnTimer();
+    startTurnOrAutoAdvance();
   }
 
   // ブロックを1つスライドさせる(=1ターン経過)たびに呼ばれる、入力の窓口。
@@ -217,7 +228,7 @@ function init() {
         return;
       }
       setInteractionEnabled(true);
-      startTurnTimer();
+      startTurnOrAutoAdvance();
       checkAchievements();
       return;
     }
@@ -253,7 +264,7 @@ function init() {
         return;
       }
       setInteractionEnabled(true);
-      startTurnTimer();
+      startTurnOrAutoAdvance();
       checkAchievements();
     }, LINE_FLASH_MS);
   }

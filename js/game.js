@@ -2,6 +2,7 @@ import {
   COLS,
   createBoard,
   isTopRowFilled,
+  isBoardEmpty,
   insertRowAtBottom,
   compactBoard,
   findFullRows,
@@ -116,6 +117,11 @@ function updateHighScore(state) {
 // 指定マスに乗っているブロックの情報を返す(空なら null)。
 export function pieceAt(state, row, col) {
   return getPieceAt(state.board, row, col);
+}
+
+// 盤面上に動かせるブロックが1つも無いか(既存ブロックが0)を判定する
+export function hasNoMovableBlocks(state) {
+  return isBoardEmpty(state.board);
 }
 
 // そのブロックが左右にスライドできる範囲(到達可能な startCol の最小・最大)を返す。

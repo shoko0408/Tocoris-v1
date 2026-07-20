@@ -9,6 +9,11 @@ export function isTopRowFilled(board) {
   return board[ROWS - 1].some((cell) => cell !== null);
 }
 
+// 盤面上にブロックが1つも無いか(=スライドできるブロックが無い状態)を判定する
+export function isBoardEmpty(board) {
+  return board.every((row) => row.every((cell) => cell === null));
+}
+
 // 盤面全体を1段押し上げ、空いた最下段に rowCells(長さCOLSの配列。中身は
 // { pieceId, color, special } または null)を差し込む。ブロックの形・位置関係は
 // 常に一緒に動くため、あとから分断されることがない。
