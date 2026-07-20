@@ -19,37 +19,6 @@ export function insertRowAtBottom(board, rowCells) {
   board[0] = rowCells.map((cell) => (cell ? { ...cell } : null));
 }
 
-// 盤面全体を見て、列が重ならない隣り合う行同士を1つの行に合体させる。
-// (ある行と、その1つ上の行の中身が列的に重ならなければ、同じ行に詰め合わせて
-//  上を1段ずつ繰り上げる。重なる場合はそのブロックが形を保ったまま浮いた状態になる
-//  = 分断されない)。変化がなくなるまで盤面全体を繰り返しスキャンすることで、
-// 新しいブロックの挿入時だけでなく、スライド操作などで後から合体条件が
-// 揃ったブロック同士もまとめて詰められる。
-export function compactBoard(board) {
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (let row = 0; row < ROWS - 1; row++) {
-      const current = board[row];
-      const above = board[row + 1];
-      const aboveHasContent = above.some((cell) => cell !== null);
-      if (!aboveHasContent) continue;
-
-      const overlaps = current.some((cell, c) => cell !== null && above[c] !== null);
-      if (overlaps) continue;
-
-      for (let c = 0; c < COLS; c++) {
-        if (above[c] !== null) current[c] = above[c];
-      }
-      for (let r = row + 1; r < ROWS - 1; r++) {
-        board[r] = board[r + 1];
-      }
-      board[ROWS - 1] = Array(COLS).fill(null);
-      changed = true;
-    }
-  }
-}
-
 export function findFullRows(board) {
   const full = [];
   for (let r = 0; r < ROWS; r++) {
@@ -127,5 +96,43 @@ export function moveBlockTo(board, piece, newStartCol) {
   }
   for (let i = 0; i < width; i++) {
     board[row][newStartCol + i] = cells[i];
+  }
+}
+
+// 盤面上の全ブロックについて、そのブロックが乗っている列の範囲がすべて
+// 真下(1段下)で空いていれば、ブロックを丸ごと1段落とす(分断はしない)。
+// これを、どのブロックも落とせなくなるまで繰り返すことで、複数段の空洞を
+// 一気に埋めたり、既存ブロック同士が下の行の空きにぴったり収まって
+// 合体したりする。
+export function compactBoard(board) {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let row = 1; row < ROWS; row++) {
+      let col = 0;
+      while (col < COLS) {
+        const cell = board[row][col];
+        if (!cell) {
+          col += 1;
+          continue;
+        }
+        const piece = getPieceAt(board, row, col);
+        let canFall = true;
+        for (let c = piece.startCol; c < piece.startCol + piece.width; c++) {
+          if (board[row - 1][c] !== null) {
+            canFall = false;
+            break;
+          }
+        }
+        if (canFall) {
+          for (let c = piece.startCol; c < piece.startCol + piece.width; c++) {
+            board[row - 1][c] = board[row][c];
+            board[row][c] = null;
+          }
+          changed = true;
+        }
+        col = piece.startCol + piece.width;
+      }
+    }
   }
 }
