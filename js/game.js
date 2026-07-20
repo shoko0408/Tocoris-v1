@@ -2,12 +2,15 @@ import {
   COLS,
   createBoard,
   isTopRowFilled,
-  insertPieceIntoColumns,
+  insertRowAtBottom,
   findFullRows,
   buildClearMap,
   clearCells,
+  getPieceAt,
+  getSlideBounds,
+  moveBlockTo,
 } from './board.js';
-import { createPiece, clampCol } from './piece.js';
+import { createPendingSpawn } from './piece.js';
 import { loadHighScore, saveHighScore, loadEndlessHighScore, saveEndlessHighScore } from './storage.js';
 import { getStageConfig, getEndlessConfig } from './stages.js';
 import { collectBonusCells } from './specials.js';
@@ -21,7 +24,7 @@ const BONUS_CELL_SCORE = 20; // 特殊ブロックの追加消去1マスあた�
 export function createGame(mode = 'stage') {
   const state = {
     board: createBoard(),
-    piece: null,
+    pendingSpawn: null,
     score: 0,
     highScore: 0,
     combo: 0,
@@ -43,6 +46,26 @@ export function getCurrentStageConfig(state) {
   return state.mode === 'endless' ? getEndlessConfig(state.linesThisRun) : getStageConfig(state.stage);
 }
 
+// ブロック群(セグメント配列)から、盤面1行分のセル配列を組み立てる
+function buildRowFromSpawn(spawn) {
+  const row = Array(COLS).fill(null);
+  spawn.forEach(({
+    col, width, color, special, pieceId,
+  }) => {
+    for (let i = 0; i < width; i++) {
+      row[col + i] = { pieceId, color, special };
+    }
+  });
+  return row;
+}
+
+// 開始直後は盤面が空でスライドできるブロックが無く詰んでしまうため、
+// 最初の1行はスコアやアニメーションなしでそのまま盤面へ置いておく。
+function seedInitialRow(state, config) {
+  const spawn = createPendingSpawn(COLS, config.widthWeights);
+  insertRowAtBottom(state.board, buildRowFromSpawn(spawn));
+}
+
 function startStage(state, stageNumber) {
   const config = getStageConfig(stageNumber);
   state.stage = stageNumber;
@@ -51,7 +74,8 @@ function startStage(state, stageNumber) {
   state.combo = 0;
   state.isGameOver = false;
   state.stageCleared = false;
-  state.piece = createPiece(COLS, config.widthWeights);
+  seedInitialRow(state, config);
+  state.pendingSpawn = createPendingSpawn(COLS, config.widthWeights);
 }
 
 function startEndlessRun(state) {
@@ -62,7 +86,8 @@ function startEndlessRun(state) {
   state.combo = 0;
   state.isGameOver = false;
   state.stageCleared = false;
-  state.piece = createPiece(COLS, config.widthWeights);
+  seedInitialRow(state, config);
+  state.pendingSpawn = createPendingSpawn(COLS, config.widthWeights);
 }
 
 function startRun(state, mode) {
@@ -87,45 +112,54 @@ function updateHighScore(state) {
   }
 }
 
-export function moveLeft(state) {
-  if (state.isGameOver) return;
-  state.piece.col = clampCol(state.piece.col - 1, state.piece.maxCol);
+// 指定マスに乗っているブロックの情報を返す(空なら null)。
+export function pieceAt(state, row, col) {
+  return getPieceAt(state.board, row, col);
 }
 
-export function moveRight(state) {
-  if (state.isGameOver) return;
-  state.piece.col = clampCol(state.piece.col + 1, state.piece.maxCol);
+// そのブロックが左右にスライドできる範囲(到達可能な startCol の最小・最大)を返す。
+export function slideBounds(state, piece) {
+  return getSlideBounds(state.board, piece);
 }
 
-export function setPieceColumn(state, col) {
-  if (state.isGameOver) return;
-  state.piece.col = clampCol(col, state.piece.maxCol);
+// 盤面上の既存ブロックをスライドさせる。実際に位置が変わったら true を返す。
+export function slideBlock(state, piece, newStartCol) {
+  const { minCol, maxCol } = getSlideBounds(state.board, piece);
+  const clamped = Math.max(minCol, Math.min(newStartCol, maxCol));
+  if (clamped === piece.startCol) return false;
+  moveBlockTo(state.board, piece, clamped);
+  return true;
 }
 
-// 決定操作の前半: ピースが乗る列だけを盤面へ挿入し、押し上げまで行う。
+// ターンの前半: 予告されていたブロック群を最下段へ挿入し、盤面全体を1段押し上げる。
 // ライン消去は resolveClears に分離し、間に消去エフェクトを挟めるようにする。
-export function placePiece(state) {
-  if (state.isGameOver) return { fullRows: [], bonusCells: [], gameOver: true, touchedCols: [] };
+export function spawnPendingBlocks(state) {
+  if (state.isGameOver) return { fullRows: [], bonusCells: [], gameOver: true, newCols: [] };
 
   if (isTopRowFilled(state.board)) {
     state.isGameOver = true;
-    return { fullRows: [], bonusCells: [], gameOver: true, touchedCols: [] };
+    return { fullRows: [], bonusCells: [], gameOver: true, newCols: [] };
   }
 
-  const { col, width, color, special } = state.piece;
-  insertPieceIntoColumns(state.board, col, width, { color, special });
+  const row = buildRowFromSpawn(state.pendingSpawn);
+  const newCols = [];
+  row.forEach((cell, c) => {
+    if (cell) newCols.push(c);
+  });
+  insertRowAtBottom(state.board, row);
 
   state.score += PLACEMENT_SCORE;
   updateHighScore(state);
 
-  const touchedCols = Array.from({ length: width }, (_, i) => col + i);
   const fullRows = findFullRows(state.board);
   const bonusCells = collectBonusCells(state.board, fullRows);
-  return { fullRows, bonusCells, gameOver: false, touchedCols };
+  return {
+    fullRows, bonusCells, gameOver: false, newCols,
+  };
 }
 
-// 決定操作の後半: 揃った行(+特殊ブロックのボーナスマス)を消去し、
-// ステージクリア判定を行い、次のピースを準備する(ステージモードのみ)。
+// ターンの後半: 揃った行(+特殊ブロックのボーナスマス)を消去し、
+// ステージクリア判定を行い、次に予告するブロック群を準備する(ステージモードのみ)。
 export function resolveClears(state, fullRows, bonusCells = []) {
   if (fullRows.length > 0) {
     const baseScore = SCORE_TABLE[fullRows.length] || fullRows.length * 100;
@@ -149,7 +183,7 @@ export function resolveClears(state, fullRows, bonusCells = []) {
     return { cleared: fullRows.length, gameOver: false, stageCleared: true };
   }
 
-  state.piece = createPiece(COLS, config.widthWeights);
+  state.pendingSpawn = createPendingSpawn(COLS, config.widthWeights);
 
   if (isTopRowFilled(state.board)) {
     state.isGameOver = true;

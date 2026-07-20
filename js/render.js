@@ -78,6 +78,25 @@ export function createRenderer({
     return ROWS - 1 - boardRow;
   }
 
+  // 画面上のタップ/ドラッグ座標(clientX/Y)から、盤面の列・行番号を求める
+  function columnFromClientX(clientX) {
+    const rect = boardEl.getBoundingClientRect();
+    const col = Math.floor(((clientX - rect.left) / rect.width) * COLS);
+    return Math.max(0, Math.min(COLS - 1, col));
+  }
+
+  function rowFromClientY(clientY) {
+    const rect = boardEl.getBoundingClientRect();
+    const domIndex = Math.floor(((clientY - rect.top) / rect.height) * ROWS);
+    const clampedDomIndex = Math.max(0, Math.min(ROWS - 1, domIndex));
+    return ROWS - 1 - clampedDomIndex;
+  }
+
+  // 1マス分の幅(px)。ドラッグ量を列数に変換する際に使う
+  function getCellWidth() {
+    return boardEl.getBoundingClientRect().width / COLS;
+  }
+
   function renderBoard(board) {
     for (let boardRow = 0; boardRow < ROWS; boardRow++) {
       const domIndex = domIndexOf(boardRow);
@@ -87,10 +106,16 @@ export function createRenderer({
     }
   }
 
-  function renderPreview(piece) {
+  // 次にせり出してくるブロック群の予告表示(操作不可、見た目のみ)
+  function renderPreview(pendingSpawn) {
+    const segmentByCol = new Array(COLS).fill(null);
+    pendingSpawn.forEach((seg) => {
+      for (let i = 0; i < seg.width; i++) {
+        segmentByCol[seg.col + i] = seg;
+      }
+    });
     for (let c = 0; c < COLS; c++) {
-      const filled = c >= piece.col && c < piece.col + piece.width;
-      previewCells[c].className = cellClassFor(filled ? piece : null);
+      previewCells[c].className = cellClassFor(segmentByCol[c]);
     }
   }
 
@@ -162,16 +187,16 @@ export function createRenderer({
 
   function renderAll(state) {
     renderBoard(state.board);
-    renderPreview(state.piece);
+    renderPreview(state.pendingSpawn);
     renderScore(state.score);
     renderHighScore(state.highScore);
     renderCombo(state.combo);
   }
 
-  // 新しく置かれたピースの列だけにポップインアニメーションを付ける
-  function playPlacementAnimation(touchedCols) {
+  // 新しく入ってきたブロックの列だけにポップインアニメーションを付ける
+  function playPlacementAnimation(newCols) {
     const domIndex = domIndexOf(0);
-    touchedCols.forEach((c) => {
+    newCols.forEach((c) => {
       const cell = boardColumns[c].cells[domIndex];
       cell.classList.remove('cell-pop');
       // eslint-disable-next-line no-unused-expressions
@@ -180,9 +205,9 @@ export function createRenderer({
     });
   }
 
-  // ピースが乗った列だけを FLIP で1段押し上げアニメーションさせる
-  function playPushUpAnimation(touchedCols) {
-    touchedCols.forEach((c) => {
+  // 盤面全体(8列すべて)を FLIP で1段押し上げアニメーションさせる
+  function playPushUpAnimation() {
+    for (let c = 0; c < COLS; c++) {
       const colEl = boardColumns[c].el;
       const cellHeight = colEl.clientHeight / ROWS;
       colEl.style.transition = 'none';
@@ -191,7 +216,32 @@ export function createRenderer({
       colEl.offsetHeight; // reflow
       colEl.style.transition = 'transform 160ms cubic-bezier(.22,.9,.35,1)';
       colEl.style.transform = 'translateY(0)';
-    });
+    }
+  }
+
+  // ── 既存ブロックのドラッグスライド用プレビュー(実データには触れず見た目だけ動かす) ──
+  let dragGhost = null;
+
+  function beginDragGhost(piece, cellData) {
+    dragGhost = {
+      row: piece.row, width: piece.width, className: cellClassFor(cellData), lastCol: piece.startCol,
+    };
+  }
+
+  function updateDragGhost(candidateCol) {
+    if (!dragGhost) return;
+    const domIndex = domIndexOf(dragGhost.row);
+    for (let i = 0; i < dragGhost.width; i++) {
+      boardColumns[dragGhost.lastCol + i].cells[domIndex].className = 'cell';
+    }
+    for (let i = 0; i < dragGhost.width; i++) {
+      boardColumns[candidateCol + i].cells[domIndex].className = dragGhost.className;
+    }
+    dragGhost.lastCol = candidateCol;
+  }
+
+  function endDragGhost() {
+    dragGhost = null;
   }
 
   // 揃った行を光らせてから消す(消去エフェクト)
@@ -265,6 +315,12 @@ export function createRenderer({
     hideStageClear,
     playPlacementAnimation,
     playPushUpAnimation,
+    columnFromClientX,
+    rowFromClientY,
+    getCellWidth,
+    beginDragGhost,
+    updateDragGhost,
+    endDragGhost,
     flashLines,
     flashBonusCells,
     rainbowBurst,

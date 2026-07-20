@@ -9,15 +9,14 @@ export function isTopRowFilled(board) {
   return board[ROWS - 1].some((cell) => cell !== null);
 }
 
-// ピースが乗る列(startCol 〜 startCol+width-1)だけを1段押し上げ、
-// 空いた最下段に cellData({ color, special })を差し込む。触れていない列はそのまま。
-export function insertPieceIntoColumns(board, startCol, width, cellData) {
-  for (let c = startCol; c < startCol + width; c++) {
-    for (let r = ROWS - 1; r > 0; r--) {
-      board[r][c] = board[r - 1][c];
-    }
-    board[0][c] = { ...cellData };
+// 盤面全体を1段押し上げ、空いた最下段に rowCells(長さCOLSの配列。中身は
+// { pieceId, color, special } または null)を差し込む。ブロックの形・位置関係は
+// 常に一緒に動くため、あとから分断されることがない。
+export function insertRowAtBottom(board, rowCells) {
+  for (let r = ROWS - 1; r > 0; r--) {
+    board[r] = board[r - 1];
   }
+  board[0] = rowCells.map((cell) => (cell ? { ...cell } : null));
 }
 
 export function findFullRows(board) {
@@ -56,4 +55,46 @@ export function clearCells(board, colRowsMap) {
       board[r][c] = kept[r];
     }
   });
+}
+
+// 指定したマスに乗っているブロック(出現時の塊)の全体の範囲を求める。
+// 同じ行の中で pieceId が連続している範囲を探す。空マスなら null。
+export function getPieceAt(board, row, col) {
+  const cell = board[row][col];
+  if (!cell) return null;
+  const { pieceId } = cell;
+  let startCol = col;
+  while (startCol > 0 && board[row][startCol - 1]?.pieceId === pieceId) startCol -= 1;
+  let endCol = col;
+  while (endCol < COLS - 1 && board[row][endCol + 1]?.pieceId === pieceId) endCol += 1;
+  return { row, startCol, width: endCol - startCol + 1, pieceId };
+}
+
+// 指定ブロックが左右にスライドできる範囲(到達できる最小・最大startCol)を求める。
+// 壁か、他のブロックにぶつかるところまで。
+export function getSlideBounds(board, piece) {
+  const { row, startCol, width } = piece;
+
+  let minCol = startCol;
+  while (minCol > 0 && board[row][minCol - 1] === null) minCol -= 1;
+
+  let maxCol = startCol;
+  while (maxCol + width < COLS && board[row][maxCol + width] === null) maxCol += 1;
+
+  return { minCol, maxCol };
+}
+
+// ブロックを newStartCol の位置へ実際にスライドさせる(範囲チェックは呼び出し側で行う前提)。
+export function moveBlockTo(board, piece, newStartCol) {
+  const { row, startCol, width } = piece;
+  if (newStartCol === startCol) return;
+
+  const cells = [];
+  for (let c = startCol; c < startCol + width; c++) {
+    cells.push(board[row][c]);
+    board[row][c] = null;
+  }
+  for (let i = 0; i < width; i++) {
+    board[row][newStartCol + i] = cells[i];
+  }
 }

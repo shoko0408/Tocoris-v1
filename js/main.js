@@ -1,11 +1,10 @@
 import { registerScreens, showScreen } from './screenManager.js';
-import { COLS } from './board.js';
 import {
   createGame,
-  moveLeft,
-  moveRight,
-  setPieceColumn,
-  placePiece,
+  pieceAt,
+  slideBounds,
+  slideBlock,
+  spawnPendingBlocks,
   resolveClears,
   advanceStage,
   resetGame,
@@ -33,8 +32,9 @@ function init() {
   registerScreens();
 
   const state = createGame();
+  const boardEl = document.getElementById('board');
   const renderer = createRenderer({
-    boardEl: document.getElementById('board'),
+    boardEl,
     previewEl: document.getElementById('preview-row'),
     scoreEl: document.getElementById('score'),
     highScoreEl: document.getElementById('high-score'),
@@ -71,16 +71,10 @@ function init() {
   let resolveTimeoutId = null;
   let isResolving = false;
 
-  const btnDecide = document.getElementById('btn-decide');
-  const btnLeft = document.getElementById('btn-left');
-  const btnRight = document.getElementById('btn-right');
-
-  // 決定〜ライン消去演出の間、入力を受け付けないようにする(連打による二重処理防止)
-  function setControlsEnabled(enabled) {
+  // 決定〜ライン消去演出の間、盤面の操作を受け付けないようにする(連打による二重処理防止)
+  function setInteractionEnabled(enabled) {
     isResolving = !enabled;
-    btnDecide.disabled = !enabled;
-    btnLeft.disabled = !enabled;
-    btnRight.disabled = !enabled;
+    boardEl.classList.toggle('board-busy', !enabled);
   }
 
   function render() {
@@ -121,7 +115,7 @@ function init() {
       renderer.renderTimer(remaining / duration);
       if (remaining <= 0) {
         clearTurnTimer();
-        handleDecide();
+        advanceTurn();
       }
     }, TIMER_TICK_MS);
   }
@@ -165,7 +159,7 @@ function init() {
     renderer.hideStageClear();
     render();
     showScreen('screen-game');
-    setControlsEnabled(true);
+    setInteractionEnabled(true);
     startTurnTimer();
     checkAchievements();
   }
@@ -178,16 +172,20 @@ function init() {
     }
     renderer.hideStageClear();
     render();
-    setControlsEnabled(true);
+    setInteractionEnabled(true);
     startTurnTimer();
   }
 
-  function handleDecide() {
+  // ブロックを1つスライドさせる(=1ターン経過)たびに呼ばれる。
+  // 予告されていたブロック群を最下段へ組み込み、盤面全体を押し上げる。
+  function advanceTurn() {
     if (isResolving) return;
-    setControlsEnabled(false);
+    setInteractionEnabled(false);
     clearTurnTimer();
 
-    const { fullRows, bonusCells, gameOver, touchedCols } = placePiece(state);
+    const {
+      fullRows, bonusCells, gameOver, newCols,
+    } = spawnPendingBlocks(state);
     if (gameOver) {
       render();
       audio.playGameOver();
@@ -198,8 +196,8 @@ function init() {
 
     audio.playDecide();
     render();
-    renderer.playPushUpAnimation(touchedCols);
-    renderer.playPlacementAnimation(touchedCols);
+    renderer.playPushUpAnimation();
+    renderer.playPlacementAnimation(newCols);
 
     if (fullRows.length === 0) {
       const result = resolveClears(state, fullRows, bonusCells);
@@ -211,7 +209,7 @@ function init() {
         finalizeRun();
         return;
       }
-      setControlsEnabled(true);
+      setInteractionEnabled(true);
       startTurnTimer();
       checkAchievements();
       return;
@@ -247,11 +245,56 @@ function init() {
         finalizeRun();
         return;
       }
-      setControlsEnabled(true);
+      setInteractionEnabled(true);
       startTurnTimer();
       checkAchievements();
     }, LINE_FLASH_MS);
   }
+
+  // ── 盤面上の既存ブロックをドラッグでスライドする操作 ──
+  let drag = null; // { piece, startClientX, cellWidth, candidateCol }
+
+  boardEl.addEventListener('pointerdown', (e) => {
+    if (isResolving) return;
+    const row = renderer.rowFromClientY(e.clientY);
+    const col = renderer.columnFromClientX(e.clientX);
+    const piece = pieceAt(state, row, col);
+    if (!piece) return;
+
+    const cellData = state.board[row][col];
+    drag = {
+      piece, startClientX: e.clientX, cellWidth: renderer.getCellWidth(), candidateCol: piece.startCol,
+    };
+    renderer.beginDragGhost(piece, cellData);
+    boardEl.setPointerCapture(e.pointerId);
+  });
+
+  boardEl.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const deltaCols = Math.round((e.clientX - drag.startClientX) / drag.cellWidth);
+    const { minCol, maxCol } = slideBounds(state, drag.piece);
+    const candidateCol = Math.max(minCol, Math.min(drag.piece.startCol + deltaCols, maxCol));
+    if (candidateCol !== drag.candidateCol) {
+      drag.candidateCol = candidateCol;
+      renderer.updateDragGhost(candidateCol);
+    }
+  });
+
+  function endDrag() {
+    if (!drag) return;
+    const { piece, candidateCol } = drag;
+    renderer.endDragGhost();
+    drag = null;
+
+    const moved = slideBlock(state, piece, candidateCol);
+    render();
+    if (moved) {
+      audio.playMove();
+      advanceTurn();
+    }
+  }
+  boardEl.addEventListener('pointerup', endDrag);
+  boardEl.addEventListener('pointercancel', endDrag);
 
   function renderAchievementsScreen() {
     document.getElementById('stat-total-plays').textContent = tracker.stats.totalPlays;
@@ -348,53 +391,11 @@ function init() {
     audio.playButtonTap();
     clearTurnTimer();
     cancelPendingResolve();
-    setControlsEnabled(true);
+    setInteractionEnabled(true);
     showScreen('screen-title');
   });
 
-  document.getElementById('btn-left').addEventListener('click', () => {
-    audio.playMove();
-    moveLeft(state);
-    render();
-  });
-  document.getElementById('btn-right').addEventListener('click', () => {
-    audio.playMove();
-    moveRight(state);
-    render();
-  });
-  document.getElementById('btn-decide').addEventListener('click', handleDecide);
-
-  setupDrag(document.getElementById('preview-row'), state, render, () => isResolving);
-
   render();
-}
-
-function setupDrag(previewEl, state, render, isResolving) {
-  let dragging = false;
-  let startX = 0;
-  let startCol = 0;
-
-  previewEl.addEventListener('pointerdown', (e) => {
-    if (isResolving()) return;
-    dragging = true;
-    startX = e.clientX;
-    startCol = state.piece.col;
-    previewEl.setPointerCapture(e.pointerId);
-  });
-
-  previewEl.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const cellWidth = previewEl.clientWidth / COLS;
-    const deltaCols = Math.round((e.clientX - startX) / cellWidth);
-    setPieceColumn(state, startCol + deltaCols);
-    render();
-  });
-
-  function endDrag() {
-    dragging = false;
-  }
-  previewEl.addEventListener('pointerup', endDrag);
-  previewEl.addEventListener('pointercancel', endDrag);
 }
 
 document.addEventListener('DOMContentLoaded', init);
