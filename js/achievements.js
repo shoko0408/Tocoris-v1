@@ -1,3 +1,5 @@
+import { TOTAL_STAGES } from './stages.js';
+
 // 実績の定義一覧。追加したい場合はここに1件足すだけでよい。
 // check(snapshot) は累計統計 + 現在のハイスコアを受け取り、達成していれば true を返す。
 export const ACHIEVEMENTS = [
@@ -11,6 +13,6 @@ export const ACHIEVEMENTS = [
   { id: 'combo_5', icon: '⚡', name: 'コンボマスター', desc: '5連鎖コンボを達成する', check: (s) => s.bestCombo >= 5 },
   { id: 'rainbow_first', icon: '🌈', name: 'レインボーハンター', desc: 'レインボーブロックを消す', check: (s) => s.rainbowCleared >= 1 },
   { id: 'stage_5', icon: '🚩', name: 'ステージ5到達', desc: 'ステージ5をクリアする', check: (s) => s.maxStageCleared >= 5 },
-  { id: 'all_clear', icon: '👑', name: '完全制覇', desc: '全ステージをクリアする', check: (s) => s.maxStageCleared >= 10 },
+  { id: 'all_clear', icon: '👑', name: '完全制覇', desc: '全ステージをクリアする', check: (s) => s.maxStageCleared >= TOTAL_STAGES },
   { id: 'endless_20', icon: '♾️', name: 'エンドレスチャレンジャー', desc: 'エンドレスモードで1プレイ20ライン消す', check: (s) => s.endlessBestLines >= 20 },
 ];

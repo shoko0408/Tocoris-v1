@@ -26,8 +26,11 @@ export function randomWidth(widthWeights = DEFAULT_WIDTH_WEIGHTS) {
   return WIDTHS[WIDTHS.length - 1];
 }
 
-export function randomColor() {
-  return COLORS[Math.floor(Math.random() * COLORS.length)];
+// excludeColor を指定すると、その色を除いた中からランダムに選ぶ
+// (隙間なく隣り合うブロック同士が同じ色になって塊の境目が分からなくなるのを防ぐ)
+export function randomColor(excludeColor = null) {
+  const pool = excludeColor ? COLORS.filter((c) => c !== excludeColor) : COLORS;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // 合計の埋めマス数を、1〜4マスの複数ブロックへランダムに分割する
@@ -71,10 +74,14 @@ export function createPendingSpawn(cols, widthWeights = DEFAULT_WIDTH_WEIGHTS) {
 
   const segments = [];
   let col = gaps[0];
+  let previousColor = null;
   widths.forEach((width, i) => {
+    const touchesPrevious = i > 0 && gaps[i] === 0;
+    const color = randomColor(touchesPrevious ? previousColor : null);
     segments.push({
-      col, width, color: randomColor(), special: pickSpecial(), pieceId: nextPieceId(),
+      col, width, color, special: pickSpecial(), pieceId: nextPieceId(),
     });
+    previousColor = color;
     col += width + gaps[i + 1];
   });
 
