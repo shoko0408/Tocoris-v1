@@ -1,4 +1,4 @@
-export const ROWS = 14;
+export const ROWS = 10;
 export const COLS = 8;
 
 export function createBoard() {

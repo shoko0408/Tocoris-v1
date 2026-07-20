@@ -8,17 +8,20 @@ function cellClassFor(data) {
   return `cell filled ${visual}`;
 }
 
-// 同じ色の別ブロックが隙間なく隣り合っても切れ目が分かるよう、
-// 左隣が別ブロック(pieceIdが違う)なら境界線用のクラスを付ける
+// ブロックの塊全体がひと目でわかるよう、その塊の左端・右端のセルに枠線用の
+// クラスを付ける(上下は常に枠を付ける。ブロックは常に1行分の高さのため)
 function classNameForRow(rowData, c) {
   const cellData = rowData[c];
-  let className = cellClassFor(cellData);
-  if (cellData) {
-    const leftData = c > 0 ? rowData[c - 1] : null;
-    if (leftData && leftData.pieceId !== cellData.pieceId) {
-      className += ' piece-edge';
-    }
-  }
+  if (!cellData) return 'cell';
+
+  const leftData = c > 0 ? rowData[c - 1] : null;
+  const rightData = c < rowData.length - 1 ? rowData[c + 1] : null;
+  const isLeftEdge = !leftData || leftData.pieceId !== cellData.pieceId;
+  const isRightEdge = !rightData || rightData.pieceId !== cellData.pieceId;
+
+  let className = `${cellClassFor(cellData)} piece-outline`;
+  if (isLeftEdge) className += ' piece-edge-left';
+  if (isRightEdge) className += ' piece-edge-right';
   return className;
 }
 
